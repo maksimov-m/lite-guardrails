@@ -13,8 +13,12 @@ class NsfwDetector(BaseDetector):
 
     _WORD_PATTERN = re.compile(r"[0-9A-Za-zА-Яа-яЁё@$!*]+")
 
-    def __init__(self, extra_words : list =None):
-        self._banned = build_builtin_words(_DATA_DIR) | normalize_words(extra_words)
+    def __init__(self, extra_words: list | None = None):
+        self._banned = self.load_builtin_words() | normalize_words(extra_words)
+
+    @staticmethod
+    def load_builtin_words() -> set:
+        return build_builtin_words(_DATA_DIR)
 
     def _is_banned(self, word: str) -> bool:
         return word.lower() in self._banned
