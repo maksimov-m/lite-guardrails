@@ -7,7 +7,12 @@ from pydantic import BaseModel
 from sqlalchemy import desc, select
 
 from src.adapters.db import (
-    Dictionary, Rule, RunLog, SessionLocal, bump_version, get_version,
+    Dictionary,
+    Rule,
+    RunLog,
+    SessionLocal,
+    bump_version,
+    get_version,
 )
 
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "admin")

@@ -59,7 +59,7 @@ class PiiDetector(BaseDetector):
 
     def _assign_tags_in_order(self, spans):
         value_to_tag, counters = {}, {}
-        for start, end, cls, value in spans:
+        for _, _, cls, value in spans:
             key = (cls, value)
             if key not in value_to_tag:
                 counters[cls] = counters.get(cls, 0) + 1

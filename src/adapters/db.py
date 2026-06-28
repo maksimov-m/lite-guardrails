@@ -2,7 +2,14 @@ import datetime as dt
 import os
 
 from sqlalchemy import (
-    Boolean, DateTime, Float, Integer, String, Text, create_engine, select,
+    Boolean,
+    DateTime,
+    Float,
+    Integer,
+    String,
+    Text,
+    create_engine,
+    select,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
