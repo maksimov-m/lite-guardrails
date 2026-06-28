@@ -139,7 +139,8 @@ def _seed_if_empty():
     NSFW-словарь (~4900 слов) остаётся встроенным baseline в коде — в БД кладём
     только кастомные NSFW-слова, добавленные через админку.
     """
-    from src.domain.detectors import PiiDetector, RelevantDetector
+    from src.domain.detectors import RelevantDetector
+    from src.domain.detectors.pii.patterns import DEFAULT_PATTERNS
 
     with SessionLocal() as s:
         # встроенный NSFW-словарь (всегда есть как переключаемый baseline)
@@ -149,8 +150,9 @@ def _seed_if_empty():
 
         if not s.scalar(select(Rule).limit(1)):
             # PII: встроенные regex -> правила
-            for entity, rx in PiiDetector.builtin_patterns().items():
-                s.add(Rule(module="pii", label=entity.upper(), value=rx, enabled=True))
+            for pattern in DEFAULT_PATTERNS:
+                s.add(Rule(module="pii", label=pattern.name.upper(),
+                           value=pattern.regex, enabled=True))
 
             # relevant: фразы из файлов -> правила (label = категория)
             for category, phrases in RelevantDetector.load_chitchat_files().items():
