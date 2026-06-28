@@ -14,7 +14,7 @@ class GuardEngine:
     """
 
     def __init__(self):
-        self._nsfw_builtin = NsfwDetector.load_builtin()   # дорого — грузим раз
+        self._nsfw_builtin = NsfwDetector.load_builtin_words()
         self._version = -1
         self._pii = self._nsfw = self._relevant = None
         self.reload()
