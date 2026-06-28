@@ -1,0 +1,22 @@
+model_list:
+  - model_name: small
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.2-3b-instruct
+      api_key: os.environ/OPENROUTER_API_KEY
+
+guardrails:
+  - guardrail_name: "lite-guardrails"
+    litellm_params:
+      guardrail: lite_guardrails.LiteGuardrails
+      mode: "pre_call"
+      default_on: true
+      guard_base_url: "http://localhost:8000"
+      pii_action: "anonymize"
+      nsfw_action: "block"
+      relevant_action: "block"
+      check_input: true
+      check_output: true
+      fail_closed: false
+
+litellm_settings:
+  drop_params: true

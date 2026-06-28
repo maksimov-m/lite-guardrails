@@ -1,0 +1,39 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.Python
+build/
+dist/
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# --- Node / frontend ---
+node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+yarn-error.log*
+
+# --- кэши инструментов / датасетов ---
+.deepeval/
+.deepeval_cache/
+.cache/
+*.log
+
+# --- секреты / окружение ---
+.env
+.env.*
+*.local
+
+# --- ОС / редакторы ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,37 @@
+services:
+  guardrails:
+    build: .
+    image: lite-guardrails
+    ports:
+      - "8000:8000"
+    environment:
+      WORKERS: "8"
+      REDIS_URL: "redis://redis:6379/0"
+      MAPPING_TTL_SECONDS: "3600"
+      DATABASE_URL: "postgresql+psycopg2://guard:guard@postgres:5432/guard"
+      ADMIN_TOKEN: "admin"
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: guard
+      POSTGRES_PASSWORD: guard
+      POSTGRES_DB: guard
+    # публикуем на хостовый 5433 (5432 занят локальным Postgres),
+    # чтобы LiteLLM Proxy с хоста мог ходить в эту же БД
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
