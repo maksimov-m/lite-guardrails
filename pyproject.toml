@@ -1,0 +1,25 @@
+[project]
+name = "lite-guardrails"
+version = "0.1.0"
+description = "Lightweight guardrails service: PII / NSFW / relevance detection"
+requires-python = ">=3.12"
+# Runtime-зависимости живут в requirements.txt (его ставит Dockerfile и CI).
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
