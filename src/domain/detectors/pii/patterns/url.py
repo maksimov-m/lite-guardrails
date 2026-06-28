@@ -7,7 +7,6 @@ KNOWN_TLDS = (
 
 
 class UrlPattern(PiiPattern):
-
     name = "url"
     regex = (
         r"https?://[^\s]+"

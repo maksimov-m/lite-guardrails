@@ -41,7 +41,7 @@ def validate_regex(pattern: str):
 
 # --- модели ----------------------------------------------------------------
 class RuleIn(BaseModel):
-    module: str          # pii | nsfw | relevant
+    module: str  # pii | nsfw | relevant
     label: str | None = None
     value: str
     enabled: bool = True
@@ -54,8 +54,13 @@ class RulePatch(BaseModel):
 
 
 def _serialize(r: Rule) -> dict:
-    return {"id": r.id, "module": r.module, "label": r.label,
-            "value": r.value, "enabled": r.enabled}
+    return {
+        "id": r.id,
+        "module": r.module,
+        "label": r.label,
+        "value": r.value,
+        "enabled": r.enabled,
+    }
 
 
 def _autoapply(request: Request):
@@ -66,8 +71,9 @@ def _autoapply(request: Request):
 
 # --- CRUD правил -----------------------------------------------------------
 @router.get("/rules", dependencies=[Depends(require_admin)])
-def list_rules(module: str | None = None, label: str | None = None,
-               limit: int = 5000, offset: int = 0):
+def list_rules(
+    module: str | None = None, label: str | None = None, limit: int = 5000, offset: int = 0
+):
     with SessionLocal() as s:
         q = select(Rule).order_by(Rule.module, Rule.label, Rule.id)
         if module:
@@ -83,10 +89,9 @@ def create_rule(body: RuleIn, request: Request):
     if body.module not in ("pii", "nsfw", "relevant"):
         raise HTTPException(400, "module: pii|nsfw|relevant")
     if body.module == "pii":
-        validate_regex(body.value)        # PII value — это regex
+        validate_regex(body.value)  # PII value — это regex
     with SessionLocal() as s:
-        rule = Rule(module=body.module, label=body.label,
-                    value=body.value, enabled=body.enabled)
+        rule = Rule(module=body.module, label=body.label, value=body.value, enabled=body.enabled)
         s.add(rule)
         s.commit()
         out = _serialize(rule)
@@ -142,10 +147,18 @@ def list_dicts():
         counts = {}
         for r in s.scalars(select(Rule).where(Rule.module == "nsfw")).all():
             counts[r.label] = counts.get(r.label, 0) + 1
-        return {"dicts": [{
-            "id": d.id, "name": d.name, "enabled": d.enabled,
-            "builtin": d.builtin, "word_count": counts.get(d.name, 0),
-        } for d in dicts]}
+        return {
+            "dicts": [
+                {
+                    "id": d.id,
+                    "name": d.name,
+                    "enabled": d.enabled,
+                    "builtin": d.builtin,
+                    "word_count": counts.get(d.name, 0),
+                }
+                for d in dicts
+            ]
+        }
 
 
 @router.post("/dicts", dependencies=[Depends(require_admin)])
@@ -171,8 +184,9 @@ def update_dict(dict_id: int, body: DictPatch, request: Request):
             d.enabled = body.enabled
         if body.name is not None and not d.builtin:
             # переименование тянет переименование слов (label)
-            for r in s.scalars(select(Rule).where(
-                    Rule.module == "nsfw", Rule.label == d.name)).all():
+            for r in s.scalars(
+                select(Rule).where(Rule.module == "nsfw", Rule.label == d.name)
+            ).all():
                 r.label = body.name
             d.name = body.name
         s.commit()
@@ -191,16 +205,23 @@ def export_dict(dict_id: int, request: Request):
         if d.builtin:
             words = request.app.state.guard._nsfw_builtin
         else:
-            words = [r.value for r in s.scalars(select(Rule).where(
-                Rule.module == "nsfw", Rule.label == d.name)).all()]
+            words = [
+                r.value
+                for r in s.scalars(
+                    select(Rule).where(Rule.module == "nsfw", Rule.label == d.name)
+                ).all()
+            ]
         name = d.name
     body = "\n".join(sorted(words))
     # HTTP-заголовок только latin-1: кириллицу выкидываем, фронт всё равно
     # подставляет своё человекочитаемое имя файла.
     safe = re.sub(r"[^A-Za-z0-9._-]+", "_", name).strip("_") or "dict"
-    return PlainTextResponse(body, headers={
-        "Content-Disposition": f'attachment; filename="{safe}.txt"',
-    })
+    return PlainTextResponse(
+        body,
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe}.txt"',
+        },
+    )
 
 
 @router.delete("/dicts/{dict_id}", dependencies=[Depends(require_admin)])
@@ -211,8 +232,7 @@ def delete_dict(dict_id: int, request: Request):
             raise HTTPException(404, "dict not found")
         if d.builtin:
             raise HTTPException(400, "встроенный словарь нельзя удалить")
-        for r in s.scalars(select(Rule).where(
-                Rule.module == "nsfw", Rule.label == d.name)).all():
+        for r in s.scalars(select(Rule).where(Rule.module == "nsfw", Rule.label == d.name)).all():
             s.delete(r)
         s.delete(d)
         s.commit()
@@ -227,8 +247,12 @@ def version(request: Request):
 
 # --- логи прогонов ---------------------------------------------------------
 @router.get("/logs", dependencies=[Depends(require_admin)])
-def logs(module: str | None = None, limit: int = 100,
-         meta_key: str | None = None, meta_value: str | None = None):
+def logs(
+    module: str | None = None,
+    limit: int = 100,
+    meta_key: str | None = None,
+    meta_value: str | None = None,
+):
     with SessionLocal() as s:
         q = select(RunLog).order_by(desc(RunLog.created_at))
         if module:
@@ -240,20 +264,32 @@ def logs(module: str | None = None, limit: int = 100,
             else:
                 q = q.where(RunLog.meta.has_key(meta_key))  # noqa: W601 (JSONB ?)
         rows = s.scalars(q.limit(min(limit, 1000))).all()
-        return {"logs": [{
-            "id": r.id, "ts": r.created_at.isoformat(), "module": r.module,
-            "input": r.input_text, "output": r.output,
-            "duration_ms": round(r.duration_ms, 3), "meta": r.meta,
-        } for r in rows]}
+        return {
+            "logs": [
+                {
+                    "id": r.id,
+                    "ts": r.created_at.isoformat(),
+                    "module": r.module,
+                    "input": r.input_text,
+                    "output": r.output,
+                    "duration_ms": round(r.duration_ms, 3),
+                    "meta": r.meta,
+                }
+                for r in rows
+            ]
+        }
 
 
 @router.get("/logs/meta-keys", dependencies=[Depends(require_admin)])
 def logs_meta_keys():
     """Список всех встречающихся в логах ключей metadata (для фильтра в UI)."""
     from sqlalchemy import text
+
     with SessionLocal() as s:
-        rows = s.execute(text(
-            "SELECT DISTINCT jsonb_object_keys(meta) AS k FROM run_logs "
-            "WHERE jsonb_typeof(meta) = 'object' ORDER BY k"
-        )).all()
+        rows = s.execute(
+            text(
+                "SELECT DISTINCT jsonb_object_keys(meta) AS k FROM run_logs "
+                "WHERE jsonb_typeof(meta) = 'object' ORDER BY k"
+            )
+        ).all()
         return {"keys": [r.k for r in rows]}

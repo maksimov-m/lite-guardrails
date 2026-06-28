@@ -31,8 +31,7 @@ class GuardEngine:
             if r.module == "pii" and r.enabled and r.label:
                 pii_groups[r.label.lower()].append(r.value)
         pii_patterns = {
-            entity: "|".join(f"(?:{v})" for v in vals)
-            for entity, vals in pii_groups.items()
+            entity: "|".join(f"(?:{v})" for v in vals) for entity, vals in pii_groups.items()
         }
 
         # NSFW: слова берутся из включённых словарей.
@@ -69,7 +68,9 @@ class GuardEngine:
 
     def detect(self, module: str, text: str) -> dict:
         return {
-            "pii": self._pii, "nsfw": self._nsfw, "relevant": self._relevant,
+            "pii": self._pii,
+            "nsfw": self._nsfw,
+            "relevant": self._relevant,
         }[module].detect(text)
 
     @property

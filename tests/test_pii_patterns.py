@@ -5,21 +5,27 @@ from src.domain.detectors.pii.patterns.inn import InnPattern
 from src.domain.detectors.pii.patterns.snils import SnilsPattern
 
 
-@pytest.mark.parametrize("pattern_class, value", [
-    (BankCardPattern, "4012 8888 8888 1881"),
-    (InnPattern, "7707083893"),
-    (InnPattern, "500100732259"),
-    (SnilsPattern, "112-233-445 95"),
-])
+@pytest.mark.parametrize(
+    "pattern_class, value",
+    [
+        (BankCardPattern, "4012 8888 8888 1881"),
+        (InnPattern, "7707083893"),
+        (InnPattern, "500100732259"),
+        (SnilsPattern, "112-233-445 95"),
+    ],
+)
 def test_checksum_accepts_valid_value(pattern_class, value):
     assert pattern_class().is_valid(value)
 
 
-@pytest.mark.parametrize("pattern_class, value", [
-    (BankCardPattern, "4012 8888 8888 1882"),
-    (InnPattern, "7707083894"),
-    (SnilsPattern, "112-233-445 96"),
-])
+@pytest.mark.parametrize(
+    "pattern_class, value",
+    [
+        (BankCardPattern, "4012 8888 8888 1882"),
+        (InnPattern, "7707083894"),
+        (SnilsPattern, "112-233-445 96"),
+    ],
+)
 def test_checksum_rejects_broken_value(pattern_class, value):
     assert not pattern_class().is_valid(value)
 

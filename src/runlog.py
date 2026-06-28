@@ -8,6 +8,7 @@ in-memory очередь (микросекунды, без блокировки 
 
 По одному экземпляру на каждый воркер gunicorn (своя очередь + своя задача).
 """
+
 import asyncio
 import datetime as dt
 import logging
@@ -16,9 +17,9 @@ from src.adapters.db import RunLog, SessionLocal
 
 log = logging.getLogger("runlog")
 
-QUEUE_MAX = 20000        # потолок очереди (защита памяти при всплеске)
-BATCH_MAX = 500          # макс. размер одной пачки вставки
-FLUSH_INTERVAL = 0.25    # как часто просыпаться, если очередь пустует, сек
+QUEUE_MAX = 20000  # потолок очереди (защита памяти при всплеске)
+BATCH_MAX = 500  # макс. размер одной пачки вставки
+FLUSH_INTERVAL = 0.25  # как часто просыпаться, если очередь пустует, сек
 
 
 class RunLogger:
@@ -47,8 +48,14 @@ class RunLogger:
             if rest:
                 await asyncio.to_thread(self._flush, rest)
 
-    def log(self, module: str, input_text: str, output: str,
-            duration_ms: float, meta: dict | None = None):
+    def log(
+        self,
+        module: str,
+        input_text: str,
+        output: str,
+        duration_ms: float,
+        meta: dict | None = None,
+    ):
         """Неблокирующая постановка записи в очередь. При переполнении —
         дропаем (логирование не должно ронять/тормозить детекцию)."""
         if self._q is None:
@@ -66,8 +73,7 @@ class RunLogger:
         except asyncio.QueueFull:
             self._dropped += 1
             if self._dropped % 1000 == 1:
-                log.warning("runlog: очередь переполнена, потеряно ~%d записей",
-                            self._dropped)
+                log.warning("runlog: очередь переполнена, потеряно ~%d записей", self._dropped)
 
     async def _drain_loop(self):
         while True:
@@ -91,6 +97,5 @@ class RunLogger:
             with SessionLocal() as s:
                 s.bulk_insert_mappings(RunLog, batch)
                 s.commit()
-        except Exception as e:        # БД могла моргнуть — не роняем воркер
-            log.warning("runlog: не удалось записать пачку из %d (%s)",
-                        len(batch), e)
+        except Exception as e:  # БД могла моргнуть — не роняем воркер
+            log.warning("runlog: не удалось записать пачку из %d (%s)", len(batch), e)

@@ -4,7 +4,6 @@ from src.domain.detectors.pii.patterns.base import PiiPattern
 
 
 class BankCardPattern(PiiPattern):
-
     name = "bank_card"
     regex = r"(?<!\d)(?:\d{4}[\s\-]?){3}\d{4}(?!\d)"
 

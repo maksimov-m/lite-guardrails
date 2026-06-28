@@ -4,7 +4,6 @@ from src.domain.detectors.pii.patterns.base import PiiPattern
 
 
 class InnPattern(PiiPattern):
-
     name = "inn"
     regex = r"(?<!\d)(?:\d{12}|\d{10})(?!\d)"
 

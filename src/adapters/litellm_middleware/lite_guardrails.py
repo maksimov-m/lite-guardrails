@@ -20,6 +20,7 @@
 
 Проверяется и вход (async_pre_call_hook), и выход (async_post_call_success_hook).
 """
+
 from __future__ import annotations
 
 import os
@@ -31,10 +32,11 @@ from litellm.caching.dual_cache import DualCache
 from litellm.integrations.custom_guardrail import CustomGuardrail
 from litellm.proxy._types import UserAPIKeyAuth
 
-try:                                   # логгер прокси, если доступен
+try:  # логгер прокси, если доступен
     from litellm._logging import verbose_proxy_logger as _log
-except Exception:                      # pragma: no cover
+except Exception:  # pragma: no cover
     import logging
+
     _log = logging.getLogger("lite_guardrails")
 
 # Разделитель для склейки нескольких сообщений в один вызов /anonymize:
@@ -42,7 +44,7 @@ except Exception:                      # pragma: no cover
 # тегов (<EMAIL_1>...) остаётся консистентной, и после анонимизации текст
 # можно разрезать обратно по этому же маркеру.
 _SEP = "\n␞\n"
-_META_PII_ID = "lite_guardrails_pii_id"   # куда кладём id маппинга между хуками
+_META_PII_ID = "lite_guardrails_pii_id"  # куда кладём id маппинга между хуками
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -64,19 +66,24 @@ class LiteGuardrails(CustomGuardrail):
         **kwargs: Any,
     ):
         # приоритет: config.yaml (litellm_params) -> env -> дефолт
-        self.base_url = (guard_base_url
-                         or os.getenv("GUARD_BASE_URL", "http://localhost:8000")).rstrip("/")
+        self.base_url = (
+            guard_base_url or os.getenv("GUARD_BASE_URL", "http://localhost:8000")
+        ).rstrip("/")
         self.pii_action = (pii_action or os.getenv("GUARD_PII_ACTION", "anonymize")).lower()
         self.nsfw_action = (nsfw_action or os.getenv("GUARD_NSFW_ACTION", "block")).lower()
-        self.relevant_action = (relevant_action
-                                or os.getenv("GUARD_RELEVANT_ACTION", "block")).lower()
-        self.check_input = check_input if check_input is not None \
-            else _env_bool("GUARD_CHECK_INPUT", True)
-        self.check_output = check_output if check_output is not None \
-            else _env_bool("GUARD_CHECK_OUTPUT", True)
+        self.relevant_action = (
+            relevant_action or os.getenv("GUARD_RELEVANT_ACTION", "block")
+        ).lower()
+        self.check_input = (
+            check_input if check_input is not None else _env_bool("GUARD_CHECK_INPUT", True)
+        )
+        self.check_output = (
+            check_output if check_output is not None else _env_bool("GUARD_CHECK_OUTPUT", True)
+        )
         # fail_closed: если гуард недоступен — рубить запрос (True) или пропускать (False)
-        self.fail_closed = fail_closed if fail_closed is not None \
-            else _env_bool("GUARD_FAIL_CLOSED", False)
+        self.fail_closed = (
+            fail_closed if fail_closed is not None else _env_bool("GUARD_FAIL_CLOSED", False)
+        )
         self.timeout = timeout
         self._client: Optional[httpx.AsyncClient] = None
         super().__init__(**kwargs)
@@ -91,20 +98,22 @@ class LiteGuardrails(CustomGuardrail):
         return self._client
 
     async def _detect(self, module: str, text: str, meta: dict) -> dict:
-        r = await self._http.post(f"{self.base_url}/detect/{module}",
-                                  json={"text": text, "metadata": meta})
+        r = await self._http.post(
+            f"{self.base_url}/detect/{module}", json={"text": text, "metadata": meta}
+        )
         r.raise_for_status()
         return r.json()
 
     async def _anonymize(self, text: str) -> dict:
         r = await self._http.post(f"{self.base_url}/anonymize", json={"text": text})
         r.raise_for_status()
-        return r.json()                # {"id": ..., "text": ...}
+        return r.json()  # {"id": ..., "text": ...}
 
     async def _deanonymize(self, mapping_id: str, text: str) -> str:
-        r = await self._http.post(f"{self.base_url}/deanonymize",
-                                  json={"id": mapping_id, "text": text})
-        if r.status_code == 404:       # маппинг истёк (TTL) — оставляем как есть
+        r = await self._http.post(
+            f"{self.base_url}/deanonymize", json={"id": mapping_id, "text": text}
+        )
+        if r.status_code == 404:  # маппинг истёк (TTL) — оставляем как есть
             return text
         r.raise_for_status()
         return r.json()["text"]
@@ -165,8 +174,8 @@ class LiteGuardrails(CustomGuardrail):
                 if not res.get("RELEVANT", True):
                     if self.relevant_action == "block":
                         raise HTTPException(
-                            400, f"запрос отклонён: нерелевантно "
-                                 f"(категория: {res.get('category')})")
+                            400, f"запрос отклонён: нерелевантно (категория: {res.get('category')})"
+                        )
 
             # --- nsfw: непристойный ввод ----------------------------------
             if self.nsfw_action != "off" and user_text:
@@ -185,7 +194,7 @@ class LiteGuardrails(CustomGuardrail):
                 await self._anonymize_messages(messages, data)
 
         except HTTPException:
-            raise                                   # это наш блок — пробрасываем
+            raise  # это наш блок — пробрасываем
         except httpx.HTTPError as e:
             self._guard_unreachable("pre-call", e)
 
@@ -194,19 +203,19 @@ class LiteGuardrails(CustomGuardrail):
     async def _anonymize_messages(self, messages: list, data: dict):
         """Анонимизирует строковые сообщения одним вызовом /anonymize (сквозные
         теги) и сохраняет id маппинга для деанонимизации ответа."""
-        idxs = [i for i, m in enumerate(messages)
-                if isinstance(m.get("content"), str) and m["content"]]
+        idxs = [
+            i for i, m in enumerate(messages) if isinstance(m.get("content"), str) and m["content"]
+        ]
         if not idxs:
             return
         joined = _SEP.join(messages[i]["content"] for i in idxs)
         res = await self._anonymize(joined)
         if res["text"] == joined:
-            return                                  # PII не найдено — менять нечего
+            return  # PII не найдено — менять нечего
         parts = res["text"].split(_SEP)
         if len(parts) != len(idxs):
             # разделитель не уцелел (крайне маловероятно) — не рискуем содержимым
-            _log.warning("lite-guardrails: маркер сегментации повреждён, "
-                         "пропускаю анонимизацию")
+            _log.warning("lite-guardrails: маркер сегментации повреждён, пропускаю анонимизацию")
             return
         for i, part in zip(idxs, parts):
             messages[i]["content"] = part
@@ -258,14 +267,13 @@ class LiteGuardrails(CustomGuardrail):
         choices = getattr(response, "choices", None)
         if not choices and isinstance(response, dict):
             choices = response.get("choices")
-        for ch in (choices or []):
+        for ch in choices or []:
             msg = getattr(ch, "message", None)
             if msg is None and isinstance(ch, dict):
                 msg = ch.get("message")
             if msg is None:
                 continue
-            content = msg.get("content") if isinstance(msg, dict) \
-                else getattr(msg, "content", None)
+            content = msg.get("content") if isinstance(msg, dict) else getattr(msg, "content", None)
             out.append((msg, content))
         return out
 

@@ -8,12 +8,10 @@ from src.domain.normalization import Normalizer
 
 
 class PiiDetector(BaseDetector):
-
     name = "pii"
 
     def __init__(self, patterns: dict | None = None):
-        self._patterns = DEFAULT_PATTERNS if patterns is None \
-            else self._build_custom(patterns)
+        self._patterns = DEFAULT_PATTERNS if patterns is None else self._build_custom(patterns)
 
     @staticmethod
     def _build_custom(patterns: dict):
@@ -47,10 +45,7 @@ class PiiDetector(BaseDetector):
 
         data = []
         for start, end, cls, value in self._find_pii_spans(text):
-            data.append({"class": cls, 
-                         "value": value, 
-                         "start": start, 
-                         "end": end})
+            data.append({"class": cls, "value": value, "start": start, "end": end})
 
         return {
             "PII_DETECT": len(data) > 0,

@@ -8,16 +8,19 @@ def detector():
     return PiiDetector()
 
 
-@pytest.mark.parametrize("text, expected_class, expected_value", [
-    ("ivan@mail.ru", "email", "ivan@mail.ru"),
-    ("https://example.com/path", "url", "https://example.com/path"),
-    ("+7 999 123 45 67", "phone", "+7 999 123 45 67"),
-    ("7707083893", "inn", "7707083893"),
-    ("112-233-445 95", "snils", "112-233-445 95"),
-    ("4012 8888 8888 1881", "bank_card", "4012 8888 8888 1881"),
-    ("192.168.0.1", "ip", "192.168.0.1"),
-    ("45 03 123456", "passport_rf", "45 03 123456"),
-])
+@pytest.mark.parametrize(
+    "text, expected_class, expected_value",
+    [
+        ("ivan@mail.ru", "email", "ivan@mail.ru"),
+        ("https://example.com/path", "url", "https://example.com/path"),
+        ("+7 999 123 45 67", "phone", "+7 999 123 45 67"),
+        ("7707083893", "inn", "7707083893"),
+        ("112-233-445 95", "snils", "112-233-445 95"),
+        ("4012 8888 8888 1881", "bank_card", "4012 8888 8888 1881"),
+        ("192.168.0.1", "ip", "192.168.0.1"),
+        ("45 03 123456", "passport_rf", "45 03 123456"),
+    ],
+)
 def test_detects_each_pii_type(detector, text, expected_class, expected_value):
     item = detector.detect(text)["data"][0]
     assert (item["class"], item["value"]) == (expected_class, expected_value)
@@ -33,7 +36,7 @@ def test_clean_text_reports_no_pii(detector):
 def test_offsets_point_at_detected_value(detector):
     text = "пиши на ivan@mail.ru пожалуйста"
     item = detector.detect(text)["data"][0]
-    assert text.lower()[item["start"]:item["end"]] == item["value"]
+    assert text.lower()[item["start"] : item["end"]] == item["value"]
 
 
 def test_invalid_checksums_are_not_reported(detector):

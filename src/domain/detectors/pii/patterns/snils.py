@@ -4,7 +4,6 @@ from src.domain.detectors.pii.patterns.base import PiiPattern
 
 
 class SnilsPattern(PiiPattern):
-
     name = "snils"
     regex = r"(?<!\d)\d{3}[\s\-]\d{3}[\s\-]\d{3}[\s\-]\d{2}(?!\d)"
 

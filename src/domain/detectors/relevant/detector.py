@@ -6,12 +6,12 @@ from src.domain.detectors.relevant.utils import (
     build_category_patterns,
     read_chitchat_files,
 )
+from src.domain.normalization import Normalizer
 
 _CHITCHAT_DIR = os.path.join(os.path.dirname(__file__), "data", "chitchat")
 
 
 class RelevantDetector(BaseDetector):
-
     name = "relevant"
 
     _LETTER_PATTERN = re.compile(r"[A-Za-zА-Яа-яЁё]")
@@ -27,6 +27,7 @@ class RelevantDetector(BaseDetector):
         return read_chitchat_files(_CHITCHAT_DIR)
 
     def detect(self, text: str) -> dict:
+        text = Normalizer.normalize(text)
         if self._is_gibberish(text):
             return {"RELEVANT": False, "category": "gibberish", "data": []}
 
@@ -51,12 +52,14 @@ class RelevantDetector(BaseDetector):
         scores = {}
         for category, pattern in self._patterns.items():
             for match in pattern.finditer(text):
-                matches.append({
-                    "category": category,
-                    "value": match.group(),
-                    "start": match.start(),
-                    "end": match.end(),
-                })
+                matches.append(
+                    {
+                        "category": category,
+                        "value": match.group(),
+                        "start": match.start(),
+                        "end": match.end(),
+                    }
+                )
                 scores[category] = scores.get(category, 0) + 1
         return matches, scores
 
@@ -68,7 +71,6 @@ class RelevantDetector(BaseDetector):
 
         total_letters = sum(1 for ch in text if self._LETTER_PATTERN.match(ch))
         covered_letters = sum(
-            1 for index, ch in enumerate(text)
-            if covered[index] and self._LETTER_PATTERN.match(ch)
+            1 for index, ch in enumerate(text) if covered[index] and self._LETTER_PATTERN.match(ch)
         )
         return covered_letters / total_letters if total_letters else 0

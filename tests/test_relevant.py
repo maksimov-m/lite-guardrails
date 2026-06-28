@@ -6,10 +6,12 @@ from src.domain.detectors.relevant.detector import RelevantDetector
 
 @pytest.fixture
 def detector():
-    return RelevantDetector(phrases_by_category={
-        "greeting": ["привет"],
-        "gratitude": ["спасибо", "спасибо большое"],
-    })
+    return RelevantDetector(
+        phrases_by_category={
+            "greeting": ["привет"],
+            "gratitude": ["спасибо", "спасибо большое"],
+        }
+    )
 
 
 def test_pure_chitchat_is_not_relevant(detector):
@@ -37,7 +39,7 @@ def test_top_category_is_the_most_frequent(detector):
 
 def test_match_offsets_point_at_value(detector):
     item = detector.detect("привет")["data"][0]
-    assert "привет"[item["start"]:item["end"]] == item["value"]
+    assert "привет"[item["start"] : item["end"]] == item["value"]
 
 
 def test_read_chitchat_files_groups_by_filename_and_skips_comments(tmp_path):

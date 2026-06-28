@@ -11,9 +11,7 @@ def read_txt_dictionaries(data_dir: str) -> set:
     if not os.path.isdir(data_dir):
         raise FileNotFoundError(f"NSFW: папка словарей не найдена: {data_dir}")
 
-    txt_files = sorted(
-        name for name in os.listdir(data_dir) if name.lower().endswith(".txt")
-    )
+    txt_files = sorted(name for name in os.listdir(data_dir) if name.lower().endswith(".txt"))
     if not txt_files:
         raise FileNotFoundError(f"NSFW: в {data_dir} нет ни одного .txt-словаря")
 

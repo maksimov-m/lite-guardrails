@@ -3,12 +3,12 @@ import re
 
 from src.domain.detectors.base import BaseDetector
 from src.domain.detectors.nsfw.utils import build_builtin_words, normalize_words
+from src.domain.normalization import Normalizer
 
 _DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 
 class NsfwDetector(BaseDetector):
-
     name = "nsfw"
 
     _WORD_PATTERN = re.compile(r"[0-9A-Za-zА-Яа-яЁё@$!*]+")
@@ -24,6 +24,7 @@ class NsfwDetector(BaseDetector):
         return word.lower() in self._banned
 
     def detect(self, text: str) -> dict:
+        text = Normalizer.normalize(text)
         found = [
             {"value": match.group(), "start": match.start(), "end": match.end()}
             for match in self._WORD_PATTERN.finditer(text)

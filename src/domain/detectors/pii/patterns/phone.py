@@ -2,7 +2,6 @@ from src.domain.detectors.pii.patterns.base import PiiPattern
 
 
 class PhonePattern(PiiPattern):
-
     name = "phone"
     regex = (
         r"(?<!\d)(?:"
