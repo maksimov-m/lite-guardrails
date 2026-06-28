@@ -1,6 +1,6 @@
 import re
 
-from detectors.base import BaseDetector
+from src.domain.detectors.base import BaseDetector
 
 
 class PiiDetector(BaseDetector):

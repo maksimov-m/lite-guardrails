@@ -21,8 +21,6 @@ npm-debug.log*
 yarn-error.log*
 
 # --- кэши инструментов / датасетов ---
-.deepeval/
-.deepeval_cache/
 .cache/
 *.log
 

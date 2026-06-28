@@ -12,7 +12,7 @@ import asyncio
 import datetime as dt
 import logging
 
-from db import RunLog, SessionLocal
+from src.adapters.db import RunLog, SessionLocal
 
 log = logging.getLogger("runlog")
 

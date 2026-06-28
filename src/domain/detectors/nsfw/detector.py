@@ -3,7 +3,7 @@ import re
 
 from better_profanity import Profanity
 
-from detectors.base import BaseDetector
+from src.domain.detectors.base import BaseDetector
 
 _DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 

@@ -2,8 +2,8 @@ from collections import defaultdict
 
 from sqlalchemy import select
 
-from db import Dictionary, Rule, SessionLocal, get_version
-from detectors import NsfwDetector, PiiDetector, RelevantDetector
+from src.adapters.db import Dictionary, Rule, SessionLocal, get_version
+from src.domain.detectors import NsfwDetector, PiiDetector, RelevantDetector
 
 
 class GuardEngine:

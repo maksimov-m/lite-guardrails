@@ -2,7 +2,7 @@ import glob
 import os
 import re
 
-from detectors.base import BaseDetector
+from src.domain.detectors.base import BaseDetector
 
 _CHITCHAT_DIR = os.path.join(os.path.dirname(__file__), "data", "chitchat")
 

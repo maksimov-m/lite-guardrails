@@ -6,7 +6,7 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from sqlalchemy import desc, select
 
-from db import (
+from src.adapters.db import (
     Dictionary, Rule, RunLog, SessionLocal, bump_version, get_version,
 )
 

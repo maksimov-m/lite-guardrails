@@ -139,7 +139,7 @@ def _seed_if_empty():
     NSFW-словарь (~4900 слов) остаётся встроенным baseline в коде — в БД кладём
     только кастомные NSFW-слова, добавленные через админку.
     """
-    from detectors import PiiDetector, RelevantDetector
+    from src.domain.detectors import PiiDetector, RelevantDetector
 
     with SessionLocal() as s:
         # встроенный NSFW-словарь (всегда есть как переключаемый baseline)
