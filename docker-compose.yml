@@ -12,6 +12,20 @@ services:
       - postgres
     restart: unless-stopped
 
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Пусто -> UI ходит в API относительным путём через nginx-проксю (тот же
+        # origin). Задайте UI_API_BASE в .env, если фронт и бэк на разных хостах.
+        VITE_API_BASE: ${UI_API_BASE:-}
+    image: lite-guardrails-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - guardrails
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped

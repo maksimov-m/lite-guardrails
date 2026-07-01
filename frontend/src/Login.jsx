@@ -4,8 +4,6 @@ import * as api from "./api.js";
 export default function Login({ onLogin }) {
   const cfg = api.getConfig();
   const [token, setToken] = useState(cfg.token === "admin" ? "" : cfg.token);
-  const [base, setBase] = useState(cfg.base);
-  const [showAdv, setShowAdv] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -13,9 +11,9 @@ export default function Login({ onLogin }) {
     e.preventDefault();
     setBusy(true);
     setError("");
-    api.setConfig(base, token);
+    api.setConfig({ token });
     try {
-      await api.getVersion();      // проверка пароля: 401 -> неверный токен
+      await api.getVersion(); // проверка пароля: 401 -> неверный токен
       onLogin();
     } catch (err) {
       setError(
@@ -42,16 +40,6 @@ export default function Login({ onLogin }) {
           placeholder="••••••"
           autoFocus
         />
-
-        <div className="adv" onClick={() => setShowAdv(!showAdv)}>
-          {showAdv ? "▾" : "▸"} настройки подключения
-        </div>
-        {showAdv && (
-          <>
-            <label>API URL</label>
-            <input value={base} onChange={(e) => setBase(e.target.value)} />
-          </>
-        )}
 
         {error && <p className="err" style={{ marginBottom: 0 }}>{error}</p>}
         <button className="primary" disabled={busy}>

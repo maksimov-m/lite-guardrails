@@ -10,6 +10,7 @@ dev = [
     "pytest",
     "ruff",
     "pip-audit",
+    "httpx",
 ]
 
 [tool.ruff]

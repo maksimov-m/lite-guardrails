@@ -1,0 +1,77 @@
+import React, { useEffect, useState } from "react";
+import * as api from "./api.js";
+
+// Выдача клиентских API-ключей. Полный ключ виден ТОЛЬКО один раз при создании
+// (сервер хранит лишь sha256-хэш) — показываем его в баннере с кнопкой «Копировать».
+export default function ApiKeysTab({ onError }) {
+  const [keys, setKeys] = useState([]);
+  const [name, setName] = useState("");
+  const [fresh, setFresh] = useState(null); // {name, key} — только что созданный
+
+  const load = async () => {
+    try { setKeys((await api.listKeys()).keys); onError(""); }
+    catch (e) { onError(e.message); }
+  };
+  useEffect(() => { load(); }, []);
+
+  const create = async () => {
+    if (!name.trim()) return;
+    try {
+      const k = await api.createKey(name.trim());
+      setFresh({ name: k.name, key: k.key });
+      setName("");
+      load();
+    } catch (e) { onError(e.message); }
+  };
+  const toggle = async (k) => {
+    try { await api.patchKey(k.id, { enabled: !k.enabled }); load(); }
+    catch (e) { onError(e.message); }
+  };
+  const remove = async (k) => {
+    if (!confirm(`Отозвать ключ «${k.name}»? Клиенты с ним получат 401.`)) return;
+    try { await api.deleteKey(k.id); load(); }
+    catch (e) { onError(e.message); }
+  };
+  const copy = (text) => navigator.clipboard?.writeText(text);
+
+  return (
+    <div>
+      <div className="card">
+        <div className="row">
+          <input placeholder="имя ключа (напр. support-bot)" value={name}
+                 onChange={(e) => setName(e.target.value)} style={{ flex: 1 }}
+                 onKeyDown={(e) => e.key === "Enter" && create()} />
+          <button className="primary" onClick={create}>+ Выдать ключ</button>
+        </div>
+      </div>
+
+      {fresh && (
+        <div className="card" style={{ borderColor: "var(--accent, #2d7)" }}>
+          <div className="muted">
+            Ключ «{fresh.name}» создан. Скопируйте его сейчас — позже он не показывается.
+          </div>
+          <div className="row" style={{ marginTop: 8 }}>
+            <code className="mono rule-val" style={{ wordBreak: "break-all" }}>{fresh.key}</code>
+            <button onClick={() => copy(fresh.key)}>Копировать</button>
+            <button className="ghost" onClick={() => setFresh(null)}>Скрыть</button>
+          </div>
+        </div>
+      )}
+
+      {keys.map((k) => (
+        <div className="card" key={k.id}>
+          <div className="rule-row">
+            <input type="checkbox" checked={k.enabled} onChange={() => toggle(k)} title="вкл/выкл" />
+            <span className="rule-val">
+              <b>{k.name}</b>{" "}
+              <span className="muted mono">· {k.prefix}… · {new Date(k.created_at).toLocaleDateString()}</span>
+              {!k.enabled && <span className="muted"> · отключён</span>}
+            </span>
+            <button className="danger" title="отозвать" onClick={() => remove(k)}>✕</button>
+          </div>
+        </div>
+      ))}
+      {keys.length === 0 && <p className="muted">ключей нет</p>}
+    </div>
+  );
+}

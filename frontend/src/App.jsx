@@ -2,11 +2,13 @@ import React, { useEffect, useState } from "react";
 import * as api from "./api.js";
 import Login from "./Login.jsx";
 import RulesTab from "./RulesTab.jsx";
+import ApiKeysTab from "./ApiKeysTab.jsx";
 import LogsTab from "./LogsTab.jsx";
 import DemoTab from "./DemoTab.jsx";
 
 const NAV = [
   { key: "rules", label: "Правила" },
+  { key: "keys", label: "Ключи" },
   { key: "logs", label: "Логи" },
   { key: "demo", label: "Демо" },
 ];
@@ -52,7 +54,8 @@ export default function App() {
       </aside>
 
       <main className="main">
-        {tab === "rules" && <><h2>Настройка правил</h2><p className="muted">Добавляйте, включайте и выключайте правила детекции, затем «Применить».</p></>}
+        {tab === "rules" && <><h2>Настройка правил</h2><p className="muted">Добавляйте словари/категории и правила — изменения применяются сразу.</p></>}
+        {tab === "keys" && <><h2>API-ключи</h2><p className="muted">Выдача и отзыв ключей клиентов для детекшн-ручек.</p></>}
         {tab === "logs" && <><h2>Логи прогонов</h2><p className="muted">Вход, выход и время обработки каждого запроса.</p></>}
         {tab === "demo" && <><h2>Демо</h2><p className="muted">Проверка детекторов и анонимизации.</p></>}
 
@@ -60,6 +63,7 @@ export default function App() {
 
         <div style={{ marginTop: 18 }}>
           {tab === "rules" && <RulesTab onError={setError} />}
+          {tab === "keys" && <ApiKeysTab onError={setError} />}
           {tab === "logs" && <LogsTab onError={setError} />}
           {tab === "demo" && <DemoTab onError={setError} />}
         </div>

@@ -47,22 +47,28 @@ async def _version_poller(app: FastAPI):
             pass
 
 
-app = FastAPI(title="lite-guardrails", version="2.0.0", lifespan=lifespan)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def create_app(lifespan=None) -> FastAPI:
+    """Собрать приложение: CORS, /health и роутеры. Состояние (app.state)
+    наполняет lifespan в проде; в тестах — подставляется вручную, поэтому
+    lifespan опционален (тогда DB/Redis не поднимаются)."""
+    app = FastAPI(title="lite-guardrails", version="2.0.0", lifespan=lifespan)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.get("/health")
+    async def health():
+        return {"status": "ok"}
+
+    detect_auth = [Depends(require_api_key)]
+    app.include_router(pii_router, dependencies=detect_auth)
+    app.include_router(nsfw_router, dependencies=detect_auth)
+    app.include_router(relevant_router, dependencies=detect_auth)
+    app.include_router(admin_router)
+    return app
 
 
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
-
-
-_detect_auth = [Depends(require_api_key)]
-app.include_router(pii_router, dependencies=_detect_auth)
-app.include_router(nsfw_router, dependencies=_detect_auth)
-app.include_router(relevant_router, dependencies=_detect_auth)
-app.include_router(admin_router)
+app = create_app(lifespan=lifespan)

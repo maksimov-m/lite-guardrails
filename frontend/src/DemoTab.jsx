@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import * as api from "./api.js";
 
 export default function DemoTab({ onError }) {
+  const [apiKey, setApiKey] = useState(api.getConfig().apiKey);
   const [text, setText] = useState("Привет! Мой email a@b.com и тел 89991330855");
   const [metaStr, setMetaStr] = useState('{"user_id": "42", "app": "support-bot"}');
   const [result, setResult] = useState(null);
@@ -33,8 +34,19 @@ export default function DemoTab({ onError }) {
     catch (e) { onError(e.message); }
   };
 
+  const saveKey = (v) => { setApiKey(v); api.setConfig({ apiKey: v }); };
+
   return (
     <div>
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Клиентский API-ключ</h3>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Детекшн-ручки требуют <code>X-API-Key</code>. Выдайте ключ во вкладке «Ключи» и вставьте сюда.
+        </p>
+        <input className="mono" placeholder="gk_…" value={apiKey}
+               onChange={(e) => saveKey(e.target.value)} style={{ width: "100%" }} />
+      </div>
+
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Детекторы</h3>
         <textarea rows={3} value={text} onChange={(e) => setText(e.target.value)} />

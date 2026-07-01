@@ -107,6 +107,16 @@ def list_nsfw(request: Request):
     return {"dicts": [_nsfw_out(d) for d in _db(request).nsfw.list()]}
 
 
+@router.get("/nsfw/{dict_id}", dependencies=[Depends(require_admin)])
+def get_nsfw(dict_id: int, request: Request):
+    """Полный словарь вместе с текстом слов — для редактирования в UI
+    (в list текст намеренно не отдаём: встроенный словарь большой)."""
+    dictionary = _db(request).nsfw.get(dict_id)
+    if not dictionary:
+        raise HTTPException(404, "dict not found")
+    return {**_nsfw_out(dictionary), "text": dictionary.text}
+
+
 @router.post("/nsfw", dependencies=[Depends(require_admin)])
 def create_nsfw(body: NsfwDictIn, request: Request):
     nsfw = _db(request).nsfw
