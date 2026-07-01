@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 
-from src.entrypoints.detection import run_batch, run_detect
-from src.entrypoints.schemas import BatchIn, TextIn
+from src.entrypoints.detectors.detection import run_batch, run_detect
+from src.entrypoints.detectors.schemas import BatchIn, TextIn
 
 router = APIRouter(tags=["relevant"])
 

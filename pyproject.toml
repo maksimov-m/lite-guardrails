@@ -9,6 +9,7 @@ requires-python = ">=3.12"
 dev = [
     "pytest",
     "ruff",
+    "pip-audit",
 ]
 
 [tool.ruff]

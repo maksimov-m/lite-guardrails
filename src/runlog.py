@@ -13,7 +13,7 @@ import asyncio
 import datetime as dt
 import logging
 
-from src.adapters.db import RunLog, SessionLocal
+from src.ports.runlog_repository import RunLogRepository
 
 log = logging.getLogger("runlog")
 
@@ -23,7 +23,8 @@ FLUSH_INTERVAL = 0.25  # как часто просыпаться, если оч
 
 
 class RunLogger:
-    def __init__(self):
+    def __init__(self, repo: RunLogRepository):
+        self._repo = repo
         # Queue создаём лениво в start(): он вызывается уже внутри event loop.
         self._q: asyncio.Queue | None = None
         self._task: asyncio.Task | None = None
@@ -91,11 +92,8 @@ class RunLogger:
                     break
             await asyncio.to_thread(self._flush, batch)
 
-    @staticmethod
-    def _flush(batch: list[dict]):
+    def _flush(self, batch: list[dict]):
         try:
-            with SessionLocal() as s:
-                s.bulk_insert_mappings(RunLog, batch)
-                s.commit()
+            self._repo.write_run_logs(batch)
         except Exception as e:  # БД могла моргнуть — не роняем воркер
             log.warning("runlog: не удалось записать пачку из %d (%s)", len(batch), e)

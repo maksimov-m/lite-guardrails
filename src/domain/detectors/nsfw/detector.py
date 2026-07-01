@@ -2,7 +2,7 @@ import os
 import re
 
 from src.domain.detectors.base import BaseDetector
-from src.domain.detectors.nsfw.utils import build_builtin_words, normalize_words
+from src.domain.detectors.nsfw.utils import build_builtin_words
 from src.domain.normalization import Normalizer
 
 _DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
@@ -13,8 +13,8 @@ class NsfwDetector(BaseDetector):
 
     _WORD_PATTERN = re.compile(r"[0-9A-Za-zА-Яа-яЁё@$!*]+")
 
-    def __init__(self, extra_words: list | None = None):
-        self._banned = self.load_builtin_words() | normalize_words(extra_words)
+    def __init__(self, banned: set[str] | None = None):
+        self._banned = banned if banned is not None else self.load_builtin_words()
 
     @staticmethod
     def load_builtin_words() -> set:

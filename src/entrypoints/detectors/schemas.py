@@ -15,3 +15,7 @@ class BatchIn(BaseModel):
 class DeanonymizeIn(BaseModel):
     id: str
     text: str
+
+
+class DeanonymizeBatchIn(BaseModel):
+    items: list[DeanonymizeIn] = Field(..., min_length=1, max_length=MAX_BATCH)

@@ -1,17 +1,19 @@
 import json
-import os
 
 import redis
 
-# Конфигурация через env (см. docker-compose.yml).
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-MAPPING_TTL_SECONDS = int(os.getenv("MAPPING_TTL_SECONDS", "3600"))
+from src.config import settings
+from src.ports.mapping_store import MappingStore
+
+# Конфигурация централизована в src/config.py (заполняется из env / .env).
+REDIS_URL = settings.redis_url
+MAPPING_TTL_SECONDS = settings.mapping_ttl_seconds
 
 _KEY_PREFIX = "pii:mapping:"
 
 
-class MappingStore:
-    """Хранилище мэппингов анонимизации {тег: оригинал} в Redis по ID.
+class RedisMappingStore(MappingStore):
+    """Реализация MappingStore на Redis.
 
     Это PII, поэтому записи живут с TTL и сами протухают (MAPPING_TTL_SECONDS).
     """
@@ -31,3 +33,21 @@ class MappingStore:
     def get(self, mapping_id: str) -> dict | None:
         raw = self._redis.get(_KEY_PREFIX + mapping_id)
         return json.loads(raw) if raw else None
+
+
+class InMemoryMappingStore(MappingStore):
+    """Реализация MappingStore в памяти процесса (без TTL).
+
+    Для тестов и локального запуска без Redis. Не переживает рестарт и не
+    шарится между воркерами — в проде использовать RedisMappingStore.
+    """
+
+    def __init__(self):
+        self._data: dict[str, dict] = {}
+
+    def save(self, mapping_id: str, mapping: dict) -> None:
+        self._data[mapping_id] = dict(mapping)
+
+    def get(self, mapping_id: str) -> dict | None:
+        value = self._data.get(mapping_id)
+        return dict(value) if value is not None else None

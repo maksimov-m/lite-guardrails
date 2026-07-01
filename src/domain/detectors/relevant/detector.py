@@ -10,11 +10,18 @@ from src.domain.normalization import Normalizer
 
 _CHITCHAT_DIR = os.path.join(os.path.dirname(__file__), "data", "chitchat")
 
+_LETTER_RE = re.compile(r"[A-Za-zА-Яа-яЁё]")
+# Множество тех же символов, что матчит _LETTER_RE (строим из самого паттерна —
+# гарантированно эквивалентно). Проверка `ch in set` заменяет regex на каждый
+# символ при подсчёте покрытия: тот же результат, но без вызова regex-движка.
+_LETTER_SET = frozenset(chr(c) for c in range(0x500) if _LETTER_RE.match(chr(c)))
+
 
 class RelevantDetector(BaseDetector):
     name = "relevant"
 
-    _LETTER_PATTERN = re.compile(r"[A-Za-zА-Яа-яЁё]")
+    _LETTER_PATTERN = _LETTER_RE
+    _LETTER_SET = _LETTER_SET
     COVERAGE_THRESHOLD = 0.8
 
     def __init__(self, phrases_by_category: dict | None = None):
@@ -69,8 +76,8 @@ class RelevantDetector(BaseDetector):
             for index in range(match["start"], match["end"]):
                 covered[index] = True
 
-        total_letters = sum(1 for ch in text if self._LETTER_PATTERN.match(ch))
+        total_letters = sum(1 for ch in text if ch in self._LETTER_SET)
         covered_letters = sum(
-            1 for index, ch in enumerate(text) if covered[index] and self._LETTER_PATTERN.match(ch)
+            1 for index, ch in enumerate(text) if covered[index] and ch in self._LETTER_SET
         )
         return covered_letters / total_letters if total_letters else 0

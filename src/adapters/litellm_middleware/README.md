@@ -97,6 +97,7 @@
 | `GUARD_CHECK_INPUT` | `true` |
 | `GUARD_CHECK_OUTPUT` | `true` |
 | `GUARD_FAIL_CLOSED` | `false` (гуард недоступен → запрос пропускается) |
+| `GUARD_API_KEY` | `""` (ключ для детекшн-ручек, заголовок `X-API-Key`; выдаётся в админке) |
 
 ## Замечания
 

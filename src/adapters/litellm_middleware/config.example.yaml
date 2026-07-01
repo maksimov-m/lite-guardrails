@@ -24,6 +24,11 @@ guardrails:
       # --- адрес нашего сервиса ---
       guard_base_url: "http://localhost:8000"   # в docker-сети: http://guardrails:8000
 
+      # --- API-ключ для детекшн-ручек гуарда ---
+      # Выдаётся в админке (POST /admin/api-keys), уходит в заголовке X-API-Key.
+      # Можно не указывать здесь, а задать переменной окружения GUARD_API_KEY.
+      api_key: os.environ/GUARD_API_KEY
+
       # --- действие по каждому модулю ---
       pii_action: "anonymize"      # anonymize | block | log | off
       nsfw_action: "block"         # block | log | off

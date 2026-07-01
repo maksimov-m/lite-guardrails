@@ -9,6 +9,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Весь код — пакет src (domain / adapters / entrypoints). litellm_middleware
 # исключён через .dockerignore (он для отдельного LiteLLM-прокси, не для гуарда).
 COPY src ./src
+# Миграции Alembic применяются на старте (db.init() -> run_migrations).
+COPY alembic ./alembic
+COPY alembic.ini ./
 
 # src импортируется как пакет (from src.entrypoints.app ...), поэтому корнем
 # путей делаем /app.

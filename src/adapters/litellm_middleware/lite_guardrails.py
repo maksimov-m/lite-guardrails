@@ -62,6 +62,7 @@ class LiteGuardrails(CustomGuardrail):
         check_input: Optional[bool] = None,
         check_output: Optional[bool] = None,
         fail_closed: Optional[bool] = None,
+        api_key: Optional[str] = None,
         timeout: float = 5.0,
         **kwargs: Any,
     ):
@@ -69,6 +70,8 @@ class LiteGuardrails(CustomGuardrail):
         self.base_url = (
             guard_base_url or os.getenv("GUARD_BASE_URL", "http://localhost:8000")
         ).rstrip("/")
+        # API-ключ для детекшн-ручек гуарда (заголовок X-API-Key)
+        self.api_key = api_key or os.getenv("GUARD_API_KEY", "")
         self.pii_action = (pii_action or os.getenv("GUARD_PII_ACTION", "anonymize")).lower()
         self.nsfw_action = (nsfw_action or os.getenv("GUARD_NSFW_ACTION", "block")).lower()
         self.relevant_action = (
@@ -94,7 +97,8 @@ class LiteGuardrails(CustomGuardrail):
     @property
     def _http(self) -> httpx.AsyncClient:
         if self._client is None:
-            self._client = httpx.AsyncClient(timeout=self.timeout)
+            headers = {"X-API-Key": self.api_key} if self.api_key else None
+            self._client = httpx.AsyncClient(timeout=self.timeout, headers=headers)
         return self._client
 
     async def _detect(self, module: str, text: str, meta: dict) -> dict:
