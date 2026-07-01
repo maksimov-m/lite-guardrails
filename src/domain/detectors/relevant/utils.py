@@ -5,7 +5,9 @@ import re
 
 def read_chitchat_files(data_dir: str) -> dict:
     categories = {}
-    for path in glob.glob(os.path.join(data_dir, "*.txt")):
+    # sorted(): порядок glob зависит от ФС и различается между ОС — фиксируем его,
+    # чтобы порядок категорий (а значит и tie-break top-категории) был детерминирован.
+    for path in sorted(glob.glob(os.path.join(data_dir, "*.txt"))):
         category = os.path.splitext(os.path.basename(path))[0]
         with open(path, encoding="utf-8") as f:
             phrases = [line.strip() for line in f if line.strip() and not line.startswith("#")]
