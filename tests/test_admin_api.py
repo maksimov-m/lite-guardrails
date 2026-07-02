@@ -116,6 +116,31 @@ def test_added_relevant_category_is_detected(ctx):
     assert res["category"] == "smalltalk"
 
 
+# --- редактирование regex PII-правила (флоу UI) -------------------------------
+def test_pii_rule_regex_edit_validates_and_applies(ctx):
+    client, _ = ctx
+    key = _issue_key(client)
+    h = {"X-API-Key": key}
+    rule = client.post("/admin/pii", json={"type": "ORDER", "regex": r"ORD-\d{4}"},
+                       headers=ADMIN).json()
+    assert client.post("/detect/pii", json={"text": "заказ ORD-1234"},
+                       headers=h).json()["PII_DETECT"] is True
+
+    # невалидный regex отклоняется, правило не портится
+    bad = client.patch(f"/admin/pii/{rule['id']}", json={"regex": "(незакрытая"}, headers=ADMIN)
+    assert bad.status_code == 400
+    assert client.post("/detect/pii", json={"text": "ORD-1234"},
+                       headers=h).json()["PII_DETECT"] is True
+
+    # валидная правка применяется сразу (reload): старый формат больше не ловится
+    ok = client.patch(f"/admin/pii/{rule['id']}", json={"regex": r"ЗАКАЗ-\d{6}"}, headers=ADMIN)
+    assert ok.status_code == 200 and ok.json()["regex"] == r"ЗАКАЗ-\d{6}"
+    assert client.post("/detect/pii", json={"text": "ORD-1234"},
+                       headers=h).json()["PII_DETECT"] is False
+    assert client.post("/detect/pii", json={"text": "номер ЗАКАЗ-123456"},
+                       headers=h).json()["PII_DETECT"] is True
+
+
 # --- статистика дашборда ------------------------------------------------------
 def test_stats_aggregates_runs_detections_and_tops(ctx):
     client, _ = ctx
