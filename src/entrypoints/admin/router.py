@@ -1,3 +1,4 @@
+import datetime as dt
 import re
 import secrets
 
@@ -239,6 +240,25 @@ def logs(
 def logs_meta_keys(request: Request):
     """Список всех встречающихся в логах ключей metadata (для фильтра в UI)."""
     return {"keys": _db(request).runlog.run_log_meta_keys()}
+
+
+# --- статистика для дашборда -------------------------------------------------
+# period -> (окно, размер бакета таймлайна): гранулярность подобрана так, чтобы
+# точек было 12-30 — читаемо и дёшево.
+_STAT_PERIODS = {
+    "1h": (dt.timedelta(hours=1), 300),
+    "24h": (dt.timedelta(hours=24), 3600),
+    "7d": (dt.timedelta(days=7), 86400),
+}
+
+
+@router.get("/stats", dependencies=[Depends(require_admin)])
+def stats(request: Request, period: str = "24h"):
+    if period not in _STAT_PERIODS:
+        raise HTTPException(400, f"period должен быть одним из {sorted(_STAT_PERIODS)}")
+    window, bucket_seconds = _STAT_PERIODS[period]
+    since = dt.datetime.utcnow() - window
+    return {"period": period, **_db(request).runlog.run_log_stats(since, bucket_seconds)}
 
 
 # --- API-ключи клиентов ----------------------------------------------------

@@ -1,3 +1,4 @@
+import datetime as dt
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -30,3 +31,18 @@ class RunLogRepository(ABC):
     @abstractmethod
     def run_log_meta_keys(self) -> list[str]:
         """Все встречающиеся в логах ключи metadata (для фильтра в UI)."""
+
+    @abstractmethod
+    def run_log_stats(self, since: dt.datetime, bucket_seconds: int) -> dict:
+        """Агрегаты по логам с момента `since` (для дашборда). Формат:
+
+        {
+          "modules":  [{"module", "runs", "detections", "avg_ms", "p95_ms"}],
+          "timeline": [{"ts": iso-строка начала бакета, "runs", "detections"}],
+          "top_keys": [{"name", "runs"}],           # по meta.api_key
+          "pii_classes": [{"class", "count"}],       # какие сущности ловит PII
+        }
+
+        Детекция = гуард сработал: для pii/nsfw — флаг <MODULE>_DETECT == true,
+        для relevant — RELEVANT == false (пойман чит-чат/нерелевантное).
+        """

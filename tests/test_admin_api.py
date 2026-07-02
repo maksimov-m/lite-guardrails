@@ -116,6 +116,52 @@ def test_added_relevant_category_is_detected(ctx):
     assert res["category"] == "smalltalk"
 
 
+# --- статистика дашборда ------------------------------------------------------
+def test_stats_aggregates_runs_detections_and_tops(ctx):
+    client, _ = ctx
+    key = _issue_key(client, "statbot")
+    h = {"X-API-Key": key}
+    # in-memory репозитории пустые (без встроенных сидов) — заводим PII-правила
+    # через админку, заодно проверяя цепочку «добавил правило -> детектит»
+    client.post("/admin/pii", json={"type": "PHONE", "regex": r"\+7\d{10}"}, headers=ADMIN)
+    client.post("/admin/pii", json={"type": "EMAIL", "regex": r"[\w.+-]+@[\w-]+\.\w+"},
+                headers=ADMIN)
+    client.post("/admin/relevant", json={"type": "greeting", "text": "привет как дела"},
+                headers=ADMIN)
+    # 2 pii-запуска с находками (phone+email и phone), 1 без; nsfw без детекта;
+    # relevant: чит-чат (сработка = RELEVANT false) и запрос по делу
+    client.post("/detect/pii", json={"text": "тел +79161234567, почта a@b.com"}, headers=h)
+    client.post("/detect/pii", json={"text": "тел +79161234567"}, headers=h)
+    client.post("/detect/pii", json={"text": "просто текст"}, headers=h)
+    client.post("/detect/nsfw", json={"text": "привет"}, headers=h)
+    client.post("/detect/relevant", json={"text": "привет как дела"}, headers=h)
+    client.post("/detect/relevant", json={"text": "как настроить оплату счетов"}, headers=h)
+
+    s = client.get("/admin/stats", params={"period": "1h"}, headers=ADMIN).json()
+
+    pii = next(m for m in s["modules"] if m["module"] == "pii")
+    nsfw = next(m for m in s["modules"] if m["module"] == "nsfw")
+    rel = next(m for m in s["modules"] if m["module"] == "relevant")
+    assert (pii["runs"], pii["detections"]) == (3, 2)
+    assert (nsfw["runs"], nsfw["detections"]) == (1, 0)
+    assert (rel["runs"], rel["detections"]) == (2, 1)  # чит-чат = сработка гуарда
+    assert pii["avg_ms"] >= 0 and pii["p95_ms"] >= 0  # поля присутствуют
+
+    # таймлайн покрывает все запуски
+    assert sum(t["runs"] for t in s["timeline"]) == 6
+    assert sum(t["detections"] for t in s["timeline"]) == 3
+
+    # топ ключей и классы PII
+    assert s["top_keys"][0]["name"] == "statbot" and s["top_keys"][0]["runs"] == 6
+    classes = {c["class"]: c["count"] for c in s["pii_classes"]}
+    assert classes.get("phone") == 2 and classes.get("email") == 1
+
+    # невалидный период отклоняется
+    assert client.get("/admin/stats", params={"period": "5y"}, headers=ADMIN).status_code == 400
+    # и всё это — под админ-токеном
+    assert client.get("/admin/stats").status_code == 401
+
+
 # --- контракт GET словаря (нужен UI для редактирования) ----------------------
 def test_nsfw_get_returns_text_while_list_hides_it(ctx):
     client, _ = ctx

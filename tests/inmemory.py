@@ -100,6 +100,71 @@ class InMemoryRunLog(RunLogRepository):
                 keys.update(r.meta.keys())
         return sorted(keys)
 
+    def run_log_stats(self, since, bucket_seconds):
+        import json
+        from collections import defaultdict
+
+        rows = [r for r in self._logs if r.created_at >= since]
+
+        def detected(r):
+            out = json.loads(r.output)
+            if r.module == "relevant":  # сработка = пойман чит-чат
+                return out.get("RELEVANT") is False
+            return out.get(f"{r.module.upper()}_DETECT") is True
+
+        by_module = defaultdict(list)
+        for r in rows:
+            by_module[r.module].append(r)
+        modules = []
+        for module in sorted(by_module):
+            ms = sorted(x.duration_ms for x in by_module[module])
+            modules.append({
+                "module": module,
+                "runs": len(ms),
+                "detections": sum(detected(x) for x in by_module[module]),
+                "avg_ms": round(sum(ms) / len(ms), 2),
+                "p95_ms": round(ms[max(0, int(len(ms) * 0.95) - 1)], 2),
+            })
+
+        buckets = defaultdict(lambda: [0, 0])
+        for r in rows:
+            ts = dt.datetime.fromtimestamp(
+                r.created_at.timestamp() // bucket_seconds * bucket_seconds
+            )
+            buckets[ts][0] += 1
+            buckets[ts][1] += detected(r)
+        timeline = [
+            {"ts": ts.isoformat(), "runs": v[0], "detections": v[1]}
+            for ts, v in sorted(buckets.items())
+        ]
+
+        key_runs = defaultdict(int)
+        for r in rows:
+            if r.meta and r.meta.get("api_key"):
+                key_runs[r.meta["api_key"]] += 1
+        top_keys = [
+            {"name": k, "runs": n}
+            for k, n in sorted(key_runs.items(), key=lambda kv: -kv[1])[:5]
+        ]
+
+        cls_counts = defaultdict(int)
+        for r in rows:
+            if r.module != "pii":
+                continue
+            for d in json.loads(r.output).get("data") or []:
+                cls_counts[d["class"]] += 1
+        pii_classes = [
+            {"class": c, "count": n}
+            for c, n in sorted(cls_counts.items(), key=lambda kv: -kv[1])[:5]
+        ]
+
+        return {
+            "modules": modules,
+            "timeline": timeline,
+            "top_keys": top_keys,
+            "pii_classes": pii_classes,
+        }
+
 
 class SyncRunLogger:
     """Замена RunLogger для тестов: пишет синхронно (без очереди/потока)."""

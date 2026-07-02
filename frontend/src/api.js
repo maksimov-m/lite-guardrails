@@ -104,6 +104,10 @@ export const getLogs = (module, limit = 100, metaKey, metaValue) => {
 export const getMetaKeys = () =>
   request("GET", "/admin/logs/meta-keys", { admin: true });
 
+// --- админ: статистика для дашборда ---
+export const getStats = (period = "24h") =>
+  request("GET", `/admin/stats?period=${period}`, { admin: true });
+
 // Скачивание NSFW-словаря .txt: тянем blob с admin-токеном и кликаем по ссылке.
 export async function downloadDict(id, name) {
   const cfg = getConfig();

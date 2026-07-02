@@ -226,6 +226,79 @@ class SqlRunLogRepository(RunLogRepository):
             ).all()
             return [r.k for r in rows]
 
+    def run_log_stats(self, since: dt.datetime, bucket_seconds: int) -> dict:
+        """Агрегаты для дашборда. Все запросы отсечены по created_at (индекс),
+        поэтому нагрузка не зависит от размера всей таблицы — только от окна.
+        Детекция = гуард сработал: для pii/nsfw это <MODULE>_DETECT = true,
+        для relevant — RELEVANT = false (пойман чит-чат/нерелевантное)."""
+        detect_flag = (
+            "CASE WHEN module = 'relevant' "
+            "THEN ((output::jsonb) ->> 'RELEVANT')::boolean IS FALSE "
+            "ELSE ((output::jsonb) ->> (upper(module) || '_DETECT'))::boolean IS TRUE END"
+        )
+        with SessionLocal() as s:
+            modules = s.execute(
+                text(
+                    f"""SELECT module,
+                               COUNT(*) AS runs,
+                               COUNT(*) FILTER (WHERE {detect_flag}) AS detections,
+                               AVG(duration_ms) AS avg_ms,
+                               PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_ms) AS p95_ms
+                        FROM run_logs WHERE created_at >= :since
+                        GROUP BY module ORDER BY module"""
+                ),
+                {"since": since},
+            ).all()
+            timeline = s.execute(
+                text(
+                    f"""SELECT to_timestamp(floor(extract(epoch FROM created_at) / :bs) * :bs)
+                                   AS bucket,
+                               COUNT(*) AS runs,
+                               COUNT(*) FILTER (WHERE {detect_flag}) AS detections
+                        FROM run_logs WHERE created_at >= :since
+                        GROUP BY bucket ORDER BY bucket"""
+                ),
+                {"since": since, "bs": bucket_seconds},
+            ).all()
+            top_keys = s.execute(
+                text(
+                    """SELECT meta->>'api_key' AS name, COUNT(*) AS runs
+                       FROM run_logs
+                       WHERE created_at >= :since AND meta->>'api_key' IS NOT NULL
+                       GROUP BY name ORDER BY runs DESC LIMIT 5"""
+                ),
+                {"since": since},
+            ).all()
+            pii_classes = s.execute(
+                text(
+                    """SELECT e->>'class' AS cls, COUNT(*) AS n
+                       FROM run_logs,
+                            LATERAL jsonb_array_elements((output::jsonb)->'data') e
+                       WHERE module = 'pii' AND created_at >= :since
+                         AND jsonb_typeof((output::jsonb)->'data') = 'array'
+                       GROUP BY cls ORDER BY n DESC LIMIT 5"""
+                ),
+                {"since": since},
+            ).all()
+        return {
+            "modules": [
+                {
+                    "module": r.module,
+                    "runs": r.runs,
+                    "detections": r.detections,
+                    "avg_ms": round(r.avg_ms or 0, 2),
+                    "p95_ms": round(r.p95_ms or 0, 2),
+                }
+                for r in modules
+            ],
+            "timeline": [
+                {"ts": r.bucket.isoformat(), "runs": r.runs, "detections": r.detections}
+                for r in timeline
+            ],
+            "top_keys": [{"name": r.name, "runs": r.runs} for r in top_keys],
+            "pii_classes": [{"class": r.cls, "count": r.n} for r in pii_classes],
+        }
+
 
 class SqlDatabase:
     """Сборка SQL-реализаций портов в один объект для удобной проводки.

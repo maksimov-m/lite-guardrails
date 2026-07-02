@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import * as api from "./api.js";
 import Login from "./Login.jsx";
+import DashboardTab from "./DashboardTab.jsx";
 import RulesTab from "./RulesTab.jsx";
 import ApiKeysTab from "./ApiKeysTab.jsx";
 import LogsTab from "./LogsTab.jsx";
 import DemoTab from "./DemoTab.jsx";
 
 const NAV = [
+  { key: "dashboard", label: "Дашборд" },
   { key: "rules", label: "Правила" },
   { key: "keys", label: "Ключи" },
   { key: "logs", label: "Логи" },
@@ -15,7 +17,7 @@ const NAV = [
 
 export default function App() {
   const [authed, setAuthed] = useState(false);
-  const [tab, setTab] = useState("rules");
+  const [tab, setTab] = useState("dashboard");
   const [error, setError] = useState("");
   const [theme, setTheme] = useState(localStorage.getItem("gr_theme") || "light");
 
@@ -54,6 +56,7 @@ export default function App() {
       </aside>
 
       <main className="main">
+        {tab === "dashboard" && <><h2>Дашборд</h2><p className="muted">Сводка по работе гуарда за выбранный период.</p></>}
         {tab === "rules" && <><h2>Настройка правил</h2><p className="muted">Добавляйте словари/категории и правила — изменения применяются сразу.</p></>}
         {tab === "keys" && <><h2>API-ключи</h2><p className="muted">Выдача и отзыв ключей клиентов для детекшн-ручек.</p></>}
         {tab === "logs" && <><h2>Логи прогонов</h2><p className="muted">Вход, выход и время обработки каждого запроса.</p></>}
@@ -62,6 +65,7 @@ export default function App() {
         {error && <div className="err" style={{ margin: "10px 0" }}>{error}</div>}
 
         <div style={{ marginTop: 18 }}>
+          {tab === "dashboard" && <DashboardTab onError={setError} />}
           {tab === "rules" && <RulesTab onError={setError} />}
           {tab === "keys" && <ApiKeysTab onError={setError} />}
           {tab === "logs" && <LogsTab onError={setError} />}
