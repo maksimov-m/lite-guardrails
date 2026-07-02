@@ -1,7 +1,7 @@
 import pytest
 
-from src.domain.detectors.nsfw import utils
-from src.domain.detectors.nsfw.detector import NsfwDetector
+from backend.domain.detectors.nsfw import utils
+from backend.domain.detectors.nsfw.detector import NsfwDetector
 
 
 @pytest.fixture

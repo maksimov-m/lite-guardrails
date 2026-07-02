@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from src.engine import GuardEngine
+from backend.engine import GuardEngine
 
 
 def test_build_pii_groups_by_type_and_skips_disabled():

@@ -2,8 +2,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from src.domain.detectors.pii.detector import PiiDetector
-from src.entrypoints.detectors.detection import (
+from backend.domain.detectors.pii.detector import PiiDetector
+from backend.entrypoints.detectors.detection import (
     anonymize_batch,
     anonymize_text,
     deanonymize_batch,

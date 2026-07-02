@@ -12,8 +12,8 @@ import hashlib
 import json
 import time
 
-from src.domain.detectors import NsfwDetector, PiiDetector, RelevantDetector
-from src.entrypoints.detectors.log_utils import build_log_payload
+from backend.domain.detectors import NsfwDetector, PiiDetector, RelevantDetector
+from backend.entrypoints.detectors.log_utils import build_log_payload
 
 # Репрезентативный корпус: чистые/длинные/с PII/чит-чат тексты.
 CORPUS = [

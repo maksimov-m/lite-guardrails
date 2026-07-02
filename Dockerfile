@@ -6,22 +6,22 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Весь код — пакет src (domain / adapters / entrypoints). litellm_middleware
+# Весь код — пакет backend (domain / adapters / entrypoints). litellm_middleware
 # исключён через .dockerignore (он для отдельного LiteLLM-прокси, не для гуарда).
-COPY src ./src
+COPY backend ./backend
 # Миграции Alembic применяются на старте (db.init() -> run_migrations).
 COPY alembic ./alembic
 COPY alembic.ini ./
 
-# src импортируется как пакет (from src.entrypoints.app ...), поэтому корнем
-# путей делаем /app.
+# backend импортируется как пакет (from backend.entrypoints.app ...), поэтому
+# корнем путей делаем /app.
 ENV PYTHONPATH=/app
 
 EXPOSE 8000
 
 # gunicorn + UvicornWorker => uvloop и httptools включаются автоматически
 # (благодаря uvicorn[standard]). Число воркеров регулируется env WORKERS.
-CMD gunicorn src.entrypoints.app:app \
+CMD gunicorn backend.entrypoints.app:app \
     -k uvicorn.workers.UvicornWorker \
     --workers ${WORKERS:-8} \
     --bind 0.0.0.0:8000 \

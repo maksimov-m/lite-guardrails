@@ -3,7 +3,7 @@ import types
 import pytest
 from fastapi import HTTPException
 
-from src.entrypoints.detectors.auth import (
+from backend.entrypoints.detectors.auth import (
     API_KEY_PREFIX,
     generate_api_key,
     hash_key,

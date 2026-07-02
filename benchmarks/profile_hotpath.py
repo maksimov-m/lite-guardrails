@@ -13,8 +13,8 @@ import json
 import pstats
 import sys
 
-from src.domain.detectors import NsfwDetector, PiiDetector, RelevantDetector
-from src.entrypoints.detectors.log_utils import build_log_payload
+from backend.domain.detectors import NsfwDetector, PiiDetector, RelevantDetector
+from backend.entrypoints.detectors.log_utils import build_log_payload
 
 CORPUS = [
     "мой телефон +79161234567, карта 4111111111111111, почта ivan@example.com",

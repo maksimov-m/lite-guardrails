@@ -11,7 +11,7 @@
 import json
 import os
 
-from src.domain.detectors import RelevantDetector
+from backend.domain.detectors import RelevantDetector
 
 GOLDEN = os.path.join(os.path.dirname(__file__), "data", "relevant_golden.json")
 

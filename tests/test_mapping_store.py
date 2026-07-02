@@ -1,7 +1,7 @@
 import pytest
 
-from src.adapters.store import InMemoryMappingStore, RedisMappingStore
-from src.ports.mapping_store import MappingStore
+from backend.adapters.store import InMemoryMappingStore, RedisMappingStore
+from backend.ports.mapping_store import MappingStore
 
 
 def test_inmemory_store_roundtrips_mapping():

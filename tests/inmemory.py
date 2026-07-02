@@ -11,13 +11,13 @@ from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
-from src.adapters.store import InMemoryMappingStore
-from src.engine import GuardEngine
-from src.entrypoints.app import create_app
-from src.entrypoints.detectors.auth import load_api_keys
-from src.ports.crud_repository import CrudRepository
-from src.ports.runlog_repository import RunLogRepository
-from src.ports.version_store import VersionStore
+from backend.adapters.store import InMemoryMappingStore
+from backend.engine import GuardEngine
+from backend.entrypoints.app import create_app
+from backend.entrypoints.detectors.auth import load_api_keys
+from backend.ports.crud_repository import CrudRepository
+from backend.ports.runlog_repository import RunLogRepository
+from backend.ports.version_store import VersionStore
 
 
 class InMemoryCrud(CrudRepository):

@@ -1,7 +1,7 @@
 import pytest
 
-from src.domain.detectors.relevant import utils
-from src.domain.detectors.relevant.detector import RelevantDetector
+from backend.domain.detectors.relevant import utils
+from backend.domain.detectors.relevant.detector import RelevantDetector
 
 
 @pytest.fixture

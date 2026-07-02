@@ -1,5 +1,5 @@
-from src.domain.detectors import PiiDetector
-from src.entrypoints.detectors.log_utils import anonymize_from_spans, build_log_payload
+from backend.domain.detectors import PiiDetector
+from backend.entrypoints.detectors.log_utils import anonymize_from_spans, build_log_payload
 
 PHONE = "+79161234567"
 
@@ -41,7 +41,7 @@ def test_non_pii_module_logs_raw():
 
 
 def test_log_raw_input_toggle(monkeypatch):
-    from src.entrypoints.detectors import log_utils
+    from backend.entrypoints.detectors import log_utils
 
     monkeypatch.setattr(log_utils.settings, "log_raw_input", True)
     det = PiiDetector()

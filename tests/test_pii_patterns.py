@@ -1,8 +1,8 @@
 import pytest
 
-from src.domain.detectors.pii.patterns.bank_card import BankCardPattern
-from src.domain.detectors.pii.patterns.inn import InnPattern
-from src.domain.detectors.pii.patterns.snils import SnilsPattern
+from backend.domain.detectors.pii.patterns.bank_card import BankCardPattern
+from backend.domain.detectors.pii.patterns.inn import InnPattern
+from backend.domain.detectors.pii.patterns.snils import SnilsPattern
 
 
 @pytest.mark.parametrize(
