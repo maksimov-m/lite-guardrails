@@ -2,7 +2,7 @@ import json
 import time
 import uuid
 
-from fastapi import Request
+from fastapi import HTTPException, Request
 
 from backend.entrypoints.detectors.log_utils import build_log_payload, meta_with_key
 
@@ -29,13 +29,32 @@ def run_batch(request: Request, module: str, texts: list[str]) -> dict:
     return {"results": [guard.detect(module, text) for text in texts]}
 
 
-def anonymize_text(request: Request, text: str) -> dict:
+def _require_store(request: Request) -> None:
+    """deanonymize=true невозможен без Redis (там хранится mapping) — падаем явно,
+    а не молча теряем обратимость. Проверяем доступность один раз на запрос."""
+    store = request.app.state.store
+    try:
+        available = store.ping()
+    except Exception:
+        available = False
+    if not available:
+        raise HTTPException(503, "deanonymize=true требует доступного Redis, но он недоступен")
+
+
+def _anonymize_one(request: Request, text: str, store_mapping: bool) -> dict:
     anonymized, mapping = request.app.state.guard.pii.anonymize(text)
     mapping_id = None
-    if mapping:
+    # mapping в Redis сохраняем только под deanonymize=true (иначе Redis не трогаем).
+    if store_mapping and mapping:
         mapping_id = uuid.uuid4().hex
         request.app.state.store.save(mapping_id, mapping)
     return {"id": mapping_id, "text": anonymized}
+
+
+def anonymize_text(request: Request, text: str, deanonymize: bool = False) -> dict:
+    if deanonymize:
+        _require_store(request)
+    return _anonymize_one(request, text, deanonymize)
 
 
 def deanonymize_text(request: Request, mapping_id: str, text: str) -> str | None:
@@ -45,8 +64,10 @@ def deanonymize_text(request: Request, mapping_id: str, text: str) -> str | None
     return request.app.state.guard.pii.deanonymize(text, mapping)
 
 
-def anonymize_batch(request: Request, texts: list[str]) -> list[dict]:
-    return [anonymize_text(request, text) for text in texts]
+def anonymize_batch(request: Request, texts: list[str], deanonymize: bool = False) -> list[dict]:
+    if deanonymize:
+        _require_store(request)  # проверяем Redis один раз на весь батч
+    return [_anonymize_one(request, text, deanonymize) for text in texts]
 
 
 def deanonymize_batch(request: Request, items: list) -> list[dict]:

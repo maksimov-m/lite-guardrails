@@ -15,3 +15,7 @@ class MappingStore(ABC):
     @abstractmethod
     def get(self, mapping_id: str) -> dict | None:
         """Вернуть мэппинг по ID или None, если его нет/протух."""
+
+    @abstractmethod
+    def ping(self) -> bool:
+        """Проверка живости хранилища (для readiness-пробы). True — доступно."""

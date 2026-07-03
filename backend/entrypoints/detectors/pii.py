@@ -8,7 +8,14 @@ from backend.entrypoints.detectors.detection import (
     run_batch,
     run_detect,
 )
-from backend.entrypoints.detectors.schemas import BatchIn, DeanonymizeBatchIn, DeanonymizeIn, TextIn
+from backend.entrypoints.detectors.schemas import (
+    AnonymizeBatchIn,
+    AnonymizeIn,
+    BatchIn,
+    DeanonymizeBatchIn,
+    DeanonymizeIn,
+    TextIn,
+)
 
 router = APIRouter(tags=["pii"])
 
@@ -24,13 +31,13 @@ async def detect_pii_batch(body: BatchIn, request: Request):
 
 
 @router.post("/anonymize")
-async def anonymize(body: TextIn, request: Request):
-    return anonymize_text(request, body.text)
+async def anonymize(body: AnonymizeIn, request: Request):
+    return anonymize_text(request, body.text, body.deanonymize)
 
 
 @router.post("/anonymize/batch")
-async def anonymize_texts(body: BatchIn, request: Request):
-    return {"results": anonymize_batch(request, body.texts)}
+async def anonymize_texts(body: AnonymizeBatchIn, request: Request):
+    return {"results": anonymize_batch(request, body.texts, body.deanonymize)}
 
 
 @router.post("/deanonymize")

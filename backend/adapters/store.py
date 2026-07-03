@@ -34,6 +34,9 @@ class RedisMappingStore(MappingStore):
         raw = self._redis.get(_KEY_PREFIX + mapping_id)
         return json.loads(raw) if raw else None
 
+    def ping(self) -> bool:
+        return bool(self._redis.ping())
+
 
 class InMemoryMappingStore(MappingStore):
     """Реализация MappingStore в памяти процесса (без TTL).
@@ -51,3 +54,6 @@ class InMemoryMappingStore(MappingStore):
     def get(self, mapping_id: str) -> dict | None:
         value = self._data.get(mapping_id)
         return dict(value) if value is not None else None
+
+    def ping(self) -> bool:
+        return True  # in-memory всегда доступен

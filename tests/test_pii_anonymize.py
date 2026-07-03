@@ -21,6 +21,9 @@ class FakeStore:
     def get(self, key):
         return self._data.get(key)
 
+    def ping(self):
+        return True
+
 
 @pytest.fixture
 def request_ctx():
@@ -29,7 +32,7 @@ def request_ctx():
 
 
 def test_anonymize_text_masks_and_saves_mapping(request_ctx):
-    result = anonymize_text(request_ctx, "почта ivan@mail.ru")
+    result = anonymize_text(request_ctx, "почта ivan@mail.ru", deanonymize=True)
 
     assert result["id"] is not None
     assert "ivan@mail.ru" not in result["text"]
@@ -46,7 +49,7 @@ def test_anonymize_batch_masks_and_assigns_ids(request_ctx):
         "почта ivan@mail.ru",
         "карта 4012 8888 8888 1881",
         "без пии",
-    ])
+    ], deanonymize=True)
 
     assert len(results) == 3
     assert "ivan@mail.ru" not in results[0]["text"] and results[0]["id"]
@@ -57,7 +60,7 @@ def test_anonymize_batch_masks_and_assigns_ids(request_ctx):
 def test_anonymize_then_deanonymize_batch_roundtrip(request_ctx):
     texts = ["почта ivan@mail.ru", "карта 4012 8888 8888 1881"]
 
-    anonymized = anonymize_batch(request_ctx, texts)
+    anonymized = anonymize_batch(request_ctx, texts, deanonymize=True)
     items = [SimpleNamespace(id=r["id"], text=r["text"]) for r in anonymized]
     restored = deanonymize_batch(request_ctx, items)
 
