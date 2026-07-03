@@ -1,6 +1,6 @@
 import pytest
 
-from src.domain.detectors.pii.detector import PiiDetector
+from backend.domain.detectors.pii.detector import PiiDetector
 
 
 @pytest.fixture

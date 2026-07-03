@@ -1,7 +1,10 @@
+alembic
 fastapi
+pydantic-settings
 uvicorn[standard]
 gunicorn
 better-profanity
+pyahocorasick
 redis
 sqlalchemy
 psycopg2-binary

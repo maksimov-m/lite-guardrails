@@ -1,12 +1,12 @@
 import pytest
 
-from src.domain.detectors.nsfw import utils
-from src.domain.detectors.nsfw.detector import NsfwDetector
+from backend.domain.detectors.nsfw import utils
+from backend.domain.detectors.nsfw.detector import NsfwDetector
 
 
 @pytest.fixture
 def detector():
-    return NsfwDetector(extra_words=["дурак"])
+    return NsfwDetector(banned={"дурак"})
 
 
 def test_detects_banned_word_with_offsets(detector):
@@ -26,10 +26,12 @@ def test_clean_text_has_no_nsfw(detector):
     assert detector.detect("вполне приличный текст") == {"NSFW_DETECT": False, "data": []}
 
 
-def test_extra_words_extend_the_builtin_set():
+def test_detector_uses_given_banned_set():
+    assert NsfwDetector(banned={"плохослово123"}).detect("вот плохослово123")["NSFW_DETECT"] is True
+
+
+def test_default_constructor_loads_builtin():
     assert NsfwDetector().detect("плохослово123")["NSFW_DETECT"] is False
-    extended = NsfwDetector(extra_words=["плохослово123"])
-    assert extended.detect("вот плохослово123")["NSFW_DETECT"] is True
 
 
 def test_builtin_dictionary_is_loaded():

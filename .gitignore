@@ -27,6 +27,7 @@ yarn-error.log*
 # --- секреты / окружение ---
 .env
 .env.*
+!.env.example
 *.local
 
 # --- ОС / редакторы ---
@@ -35,3 +36,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# MkDocs build output
+site/

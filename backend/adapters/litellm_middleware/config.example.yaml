@@ -1,0 +1,43 @@
+# Пример конфигурации LiteLLM Proxy с нашим guardrail.
+# Запуск:  litellm --config config.example.yaml
+#
+# Документация LiteLLM по кастомным guardrail:
+#   https://docs.litellm.ai/docs/proxy/guardrails/custom_guardrail
+
+model_list:
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+guardrails:
+  - guardrail_name: "lite-guardrails"
+    litellm_params:
+      # путь к классу: <модуль>.<Класс>. Файл lite_guardrails.py должен быть
+      # доступен в PYTHONPATH прокси (см. README).
+      guardrail: lite_guardrails.LiteGuardrails
+      # mode определяет момент входной проверки. Выходной хук
+      # (async_post_call_success_hook) вызывается автоматически.
+      mode: "pre_call"
+      default_on: true
+
+      # --- адрес нашего сервиса ---
+      guard_base_url: "http://localhost:8000"   # в docker-сети: http://guardrails:8000
+
+      # --- API-ключ для детекшн-ручек гуарда ---
+      # Выдаётся в админке (POST /admin/api-keys), уходит в заголовке X-API-Key.
+      # Можно не указывать здесь, а задать переменной окружения GUARD_API_KEY.
+      api_key: os.environ/GUARD_API_KEY
+
+      # --- действие по каждому модулю ---
+      pii_action: "anonymize"      # anonymize | block | log | off
+      nsfw_action: "block"         # block | log | off
+      relevant_action: "block"     # block | log | off
+
+      # --- где проверять ---
+      check_input: true            # проверять промпт пользователя
+      check_output: true           # проверять/деанонимизировать ответ модели
+
+      # --- поведение при недоступности гуарда ---
+      fail_closed: false           # true -> рубить запрос (503), false -> пропускать
+      timeout: 5.0

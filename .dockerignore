@@ -4,4 +4,4 @@ __pycache__/
 .venv/
 *.md
 # отдельный LiteLLM-прокси, в образ гуарда не нужен (тянет litellm)
-src/adapters/litellm_middleware/
+backend/adapters/litellm_middleware/

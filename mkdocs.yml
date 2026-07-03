@@ -1,0 +1,69 @@
+site_name: lite-guardrails
+site_description: Быстрый self-hosted привратник для текста — PII / NSFW / релевантность
+# ВАЖНО: замените на свой GitHub Pages URL (нужно для корректных ссылок/поиска):
+# site_url: https://<username>.github.io/<repo>/
+docs_dir: docs
+
+theme:
+  name: material
+  language: ru
+  font:
+    text: Inter
+    code: JetBrains Mono
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Тёмная тема
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Светлая тема
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.instant
+    - toc.follow
+    - content.code.copy
+    - content.code.annotate
+    - search.suggest
+    - search.highlight
+  icon:
+    logo: material/shield-check
+
+nav:
+  - Обзор: index.md
+  - Модули: modules.md
+  - Развёртывание: deployment.md
+  - Python SDK: sdk.md
+  - Архитектура: architecture.md
+  - Сравнение: comparison.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+  - search:
+      lang: ru

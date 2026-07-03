@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import GroupedRules from "./GroupedRules.jsx";
-import NsfwDicts from "./NsfwDicts.jsx";
+import PiiRules from "./PiiRules.jsx";
+import DictionaryManager from "./DictionaryManager.jsx";
+import { nsfwResource, relevantResource } from "./resources.js";
 
 const MODULES = [
   { key: "pii", label: "PII" },
@@ -25,13 +26,9 @@ export default function RulesTab({ onError }) {
         <span className="muted">изменения применяются сразу</span>
       </div>
 
-      {module === "pii" && (
-        <GroupedRules module="pii" valueLabel="regex" labelName="тег (EMAIL, PHONE…)" onError={onError} />
-      )}
-      {module === "nsfw" && <NsfwDicts onError={onError} />}
-      {module === "relevant" && (
-        <GroupedRules module="relevant" valueLabel="фраза" labelName="категория (greeting…)" onError={onError} />
-      )}
+      {module === "pii" && <PiiRules onError={onError} />}
+      {module === "nsfw" && <DictionaryManager resource={nsfwResource} onError={onError} />}
+      {module === "relevant" && <DictionaryManager resource={relevantResource} onError={onError} />}
     </div>
   );
 }

@@ -4,15 +4,26 @@ services:
     image: lite-guardrails
     ports:
       - "8000:8000"
-    environment:
-      WORKERS: "8"
-      REDIS_URL: "redis://redis:6379/0"
-      MAPPING_TTL_SECONDS: "3600"
-      DATABASE_URL: "postgresql+psycopg2://guard:guard@postgres:5432/guard"
-      ADMIN_TOKEN: "admin"
+    # Все креды/настройки — из .env (см. .env.example).
+    env_file:
+      - .env
     depends_on:
       - redis
       - postgres
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Пусто -> UI ходит в API относительным путём через nginx-проксю (тот же
+        # origin). Задайте UI_API_BASE в .env, если фронт и бэк на разных хостах.
+        VITE_API_BASE: ${UI_API_BASE:-}
+    image: lite-guardrails-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - guardrails
     restart: unless-stopped
 
   redis:
@@ -21,10 +32,9 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: guard
-      POSTGRES_PASSWORD: guard
-      POSTGRES_DB: guard
+    # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB берутся из .env
+    env_file:
+      - .env
     # публикуем на хостовый 5433 (5432 занят локальным Postgres),
     # чтобы LiteLLM Proxy с хоста мог ходить в эту же БД
     ports:

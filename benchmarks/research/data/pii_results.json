@@ -1,0 +1,119 @@
+{
+  "sample_size": 1199,
+  "systems": {
+    "lite-guardrails": {
+      "families": {
+        "contacts": {
+          "precision": 1.0,
+          "recall": 0.566,
+          "f1": 0.723,
+          "support": 357
+        },
+        "documents": {
+          "precision": 0.974,
+          "recall": 0.113,
+          "f1": 0.202,
+          "support": 1009
+        },
+        "person": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 483
+        },
+        "location": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 489
+        }
+      },
+      "micro": {
+        "precision": 0.991,
+        "recall": 0.135,
+        "f1": 0.238
+      },
+      "latency_ms": {
+        "avg": 0.1,
+        "p50": 0.06,
+        "p95": 0.33
+      }
+    },
+    "presidio": {
+      "families": {
+        "contacts": {
+          "precision": 0.543,
+          "recall": 0.658,
+          "f1": 0.595,
+          "support": 357
+        },
+        "documents": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 1009
+        },
+        "person": {
+          "precision": 0.682,
+          "recall": 0.431,
+          "f1": 0.528,
+          "support": 483
+        },
+        "location": {
+          "precision": 0.872,
+          "recall": 0.503,
+          "f1": 0.638,
+          "support": 489
+        }
+      },
+      "micro": {
+        "precision": 0.675,
+        "recall": 0.295,
+        "f1": 0.41
+      },
+      "latency_ms": {
+        "avg": 24.97,
+        "p50": 19.52,
+        "p95": 63.27
+      }
+    },
+    "llm-guard": {
+      "families": {
+        "contacts": {
+          "precision": 0.396,
+          "recall": 0.661,
+          "f1": 0.495,
+          "support": 357
+        },
+        "documents": {
+          "precision": 0.657,
+          "recall": 0.044,
+          "f1": 0.082,
+          "support": 1009
+        },
+        "person": {
+          "precision": 0.522,
+          "recall": 0.6,
+          "f1": 0.558,
+          "support": 483
+        },
+        "location": {
+          "precision": 0.236,
+          "recall": 0.673,
+          "f1": 0.349,
+          "support": 489
+        }
+      },
+      "micro": {
+        "precision": 0.344,
+        "recall": 0.385,
+        "f1": 0.363
+      },
+      "latency_ms": {
+        "avg": 1249.66,
+        "p50": 952.37,
+        "p95": 2988.43
+      }
+    }
+  }
+}

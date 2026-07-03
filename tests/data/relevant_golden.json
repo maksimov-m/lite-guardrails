@@ -1,0 +1,335 @@
+[
+  {
+    "RELEVANT": false,
+    "category": "farewell",
+    "data": [
+      {
+        "category": "farewell",
+        "value": "до свидания",
+        "start": 25,
+        "end": 36
+      },
+      {
+        "category": "gratitude",
+        "value": "спасибо большое",
+        "start": 8,
+        "end": 23
+      },
+      {
+        "category": "greeting",
+        "value": "привет",
+        "start": 0,
+        "end": 6
+      }
+    ]
+  },
+  {
+    "RELEVANT": false,
+    "category": "greeting",
+    "data": [
+      {
+        "category": "greeting",
+        "value": "здравствуйте",
+        "start": 0,
+        "end": 12
+      },
+      {
+        "category": "greeting",
+        "value": "добрый день",
+        "start": 14,
+        "end": 25
+      }
+    ]
+  },
+  {
+    "RELEVANT": false,
+    "category": "farewell",
+    "data": [
+      {
+        "category": "farewell",
+        "value": "хорошего дня",
+        "start": 9,
+        "end": 21
+      },
+      {
+        "category": "farewell",
+        "value": "пока",
+        "start": 23,
+        "end": 27
+      },
+      {
+        "category": "gratitude",
+        "value": "спасибо",
+        "start": 0,
+        "end": 7
+      }
+    ]
+  },
+  {
+    "RELEVANT": true,
+    "category": null,
+    "data": [
+      {
+        "category": "greeting",
+        "value": "привет",
+        "start": 0,
+        "end": 6
+      }
+    ]
+  },
+  {
+    "RELEVANT": true,
+    "category": null,
+    "data": [
+      {
+        "category": "gratitude",
+        "value": "спасибо",
+        "start": 0,
+        "end": 7
+      }
+    ]
+  },
+  {
+    "RELEVANT": true,
+    "category": null,
+    "data": []
+  },
+  {
+    "RELEVANT": true,
+    "category": null,
+    "data": []
+  },
+  {
+    "RELEVANT": true,
+    "category": null,
+    "data": [
+      {
+        "category": "acknowledge",
+        "value": "отлично",
+        "start": 21,
+        "end": 28
+      },
+      {
+        "category": "gratitude",
+        "value": "спасибо",
+        "start": 8,
+        "end": 15
+      },
+      {
+        "category": "gratitude",
+        "value": "спасибо",
+        "start": 38,
+        "end": 45
+      },
+      {
+        "category": "greeting",
+        "value": "привет",
+        "start": 0,
+        "end": 6
+      }
+    ]
+  },
+  {
+    "RELEVANT": true,
+    "category": null,
+    "data": []
+  },
+  {
+    "RELEVANT": true,
+    "category": null,
+    "data": [
+      {
+        "category": "farewell",
+        "value": "пока",
+        "start": 32,
+        "end": 36
+      },
+      {
+        "category": "gratitude",
+        "value": "thanks",
+        "start": 13,
+        "end": 19
+      },
+      {
+        "category": "gratitude",
+        "value": "спасибо",
+        "start": 20,
+        "end": 27
+      },
+      {
+        "category": "greeting",
+        "value": "привет",
+        "start": 6,
+        "end": 12
+      }
+    ]
+  },
+  {
+    "RELEVANT": true,
+    "category": null,
+    "data": [
+      {
+        "category": "gratitude",
+        "value": "спасибо",
+        "start": 32,
+        "end": 39
+      }
+    ]
+  },
+  {
+    "RELEVANT": false,
+    "category": "gibberish",
+    "data": []
+  },
+  {
+    "RELEVANT": false,
+    "category": "gibberish",
+    "data": []
+  },
+  {
+    "RELEVANT": false,
+    "category": "gibberish",
+    "data": []
+  },
+  {
+    "RELEVANT": true,
+    "category": null,
+    "data": []
+  },
+  {
+    "RELEVANT": true,
+    "category": null,
+    "data": []
+  },
+  {
+    "RELEVANT": false,
+    "category": "farewell",
+    "data": [
+      {
+        "category": "farewell",
+        "value": "хорошего дня",
+        "start": 16,
+        "end": 28
+      },
+      {
+        "category": "farewell",
+        "value": "до свидания",
+        "start": 29,
+        "end": 40
+      },
+      {
+        "category": "farewell",
+        "value": "всего доброго",
+        "start": 41,
+        "end": 54
+      },
+      {
+        "category": "farewell",
+        "value": "хорошего дня",
+        "start": 71,
+        "end": 83
+      },
+      {
+        "category": "farewell",
+        "value": "до свидания",
+        "start": 84,
+        "end": 95
+      },
+      {
+        "category": "farewell",
+        "value": "всего доброго",
+        "start": 96,
+        "end": 109
+      },
+      {
+        "category": "farewell",
+        "value": "хорошего дня",
+        "start": 126,
+        "end": 138
+      },
+      {
+        "category": "farewell",
+        "value": "до свидания",
+        "start": 139,
+        "end": 150
+      },
+      {
+        "category": "farewell",
+        "value": "всего доброго",
+        "start": 151,
+        "end": 164
+      },
+      {
+        "category": "farewell",
+        "value": "хорошего дня",
+        "start": 181,
+        "end": 193
+      },
+      {
+        "category": "farewell",
+        "value": "до свидания",
+        "start": 194,
+        "end": 205
+      },
+      {
+        "category": "farewell",
+        "value": "всего доброго",
+        "start": 206,
+        "end": 219
+      },
+      {
+        "category": "gratitude",
+        "value": "спасибо большое",
+        "start": 0,
+        "end": 15
+      },
+      {
+        "category": "gratitude",
+        "value": "спасибо большое",
+        "start": 55,
+        "end": 70
+      },
+      {
+        "category": "gratitude",
+        "value": "спасибо большое",
+        "start": 110,
+        "end": 125
+      },
+      {
+        "category": "gratitude",
+        "value": "спасибо большое",
+        "start": 165,
+        "end": 180
+      }
+    ]
+  },
+  {
+    "RELEVANT": false,
+    "category": "gratitude",
+    "data": [
+      {
+        "category": "gratitude",
+        "value": "спасибо",
+        "start": 0,
+        "end": 7
+      }
+    ]
+  },
+  {
+    "RELEVANT": true,
+    "category": null,
+    "data": []
+  },
+  {
+    "RELEVANT": false,
+    "category": "affirm",
+    "data": [
+      {
+        "category": "affirm",
+        "value": "ok",
+        "start": 0,
+        "end": 2
+      }
+    ]
+  }
+]
