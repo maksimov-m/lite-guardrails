@@ -11,6 +11,9 @@ from backend.ports.crud_repository import CrudRepository
 from backend.ports.runlog_repository import RunLogRepository
 from backend.ports.version_store import VersionStore
 
+# Ключ advisory-локи для retention-чистки (свой, не пересекается с сид-локой).
+_CLEANUP_LOCK_KEY = 918273646
+
 
 class SqlCrudRepository(CrudRepository):
     """Один generic CRUD на SQLAlchemy — переиспользуется для всех модулей.
@@ -24,6 +27,12 @@ class SqlCrudRepository(CrudRepository):
     def list(self) -> list:
         with SessionLocal() as s:
             return list(s.scalars(select(self._model).order_by(*self._order_by)).all())
+
+    def list_page(self, limit: int, offset: int = 0) -> list:
+        with SessionLocal() as s:
+            q = (select(self._model).order_by(*self._order_by)
+                 .offset(max(offset, 0)).limit(min(limit, 1000)))
+            return list(s.scalars(q).all())
 
     def get(self, row_id: int):
         with SessionLocal() as s:
@@ -89,6 +98,7 @@ class SqlRunLogRepository(RunLogRepository):
         self,
         module: str | None = None,
         limit: int = 100,
+        offset: int = 0,
         meta_key: str | None = None,
         meta_value: str | None = None,
     ) -> list[RunLog]:
@@ -101,7 +111,8 @@ class SqlRunLogRepository(RunLogRepository):
                     q = q.where(RunLog.meta[meta_key].astext == meta_value)
                 else:
                     q = q.where(RunLog.meta.has_key(meta_key))  # noqa: W601 (JSONB ?)
-            return list(s.scalars(q.limit(min(limit, 1000))).all())
+            q = q.offset(max(offset, 0)).limit(min(limit, 1000))
+            return list(s.scalars(q).all())
 
     def run_log_meta_keys(self) -> list[str]:
         with SessionLocal() as s:
@@ -185,3 +196,46 @@ class SqlRunLogRepository(RunLogRepository):
             "top_keys": [{"name": r.name, "runs": r.runs} for r in top_keys],
             "pii_classes": [{"class": r.cls, "count": r.n} for r in pii_classes],
         }
+
+    def run_log_metrics(self, since: dt.datetime) -> dict:
+        detect_flag = (
+            "CASE WHEN module = 'relevant' "
+            "THEN ((output::jsonb) ->> 'RELEVANT')::boolean IS FALSE "
+            "ELSE ((output::jsonb) ->> (upper(module) || '_DETECT'))::boolean IS TRUE END"
+        )
+        with SessionLocal() as s:
+            rows = s.execute(
+                text(
+                    f"""SELECT module,
+                               COUNT(*) AS runs,
+                               COUNT(*) FILTER (WHERE {detect_flag}) AS detections
+                        FROM run_logs WHERE created_at >= :since
+                        GROUP BY module ORDER BY module"""
+                ),
+                {"since": since},
+            ).all()
+        modules = [
+            {"module": r.module, "runs": r.runs, "detections": r.detections}
+            for r in rows
+        ]
+        return {"total": sum(m["runs"] for m in modules), "modules": modules}
+
+    def delete_run_logs_before(self, cutoff: dt.datetime) -> int:
+        with SessionLocal() as s:
+            # Неблокирующий advisory-lock: за цикл чистит только один воркер,
+            # остальные пропускают (иначе 8 параллельных DELETE по тем же строкам).
+            got = s.execute(
+                text("SELECT pg_try_advisory_lock(:k)"), {"k": _CLEANUP_LOCK_KEY}
+            ).scalar()
+            if not got:
+                return 0
+            try:
+                res = s.execute(
+                    text("DELETE FROM run_logs WHERE created_at < :cutoff"),
+                    {"cutoff": cutoff},
+                )
+                s.commit()
+                return res.rowcount or 0
+            finally:
+                s.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": _CLEANUP_LOCK_KEY})
+                s.commit()

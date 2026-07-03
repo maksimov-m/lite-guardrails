@@ -1,7 +1,7 @@
 import types
 
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, Response
 
 from backend.entrypoints.detectors.auth import (
     API_KEY_PREFIX,
@@ -13,8 +13,9 @@ from backend.entrypoints.detectors.auth import (
 
 
 class _Row:
-    def __init__(self, id, name, key_hash, enabled=True):
+    def __init__(self, id, name, key_hash, enabled=True, rate_limit_per_min=None):
         self.id, self.name, self.key_hash, self.enabled = id, name, key_hash, enabled
+        self.rate_limit_per_min = rate_limit_per_min
 
 
 class _Repo:
@@ -52,25 +53,25 @@ def test_load_api_keys_skips_disabled():
         _Row(2, "beta", "h2", enabled=False),
     ]
     keys = load_api_keys(_Repo(rows))
-    assert keys == {"h1": {"id": 1, "name": "alpha"}}
+    assert keys == {"h1": {"id": 1, "name": "alpha", "rate_limit_per_min": None}}
 
 
 def test_require_api_key_valid_sets_state():
     raw, key_hash, _ = generate_api_key()
     req = _request({key_hash: {"id": 7, "name": "alpha"}})
-    require_api_key(req, x_api_key=raw)
+    require_api_key(req, Response(), x_api_key=raw)
     assert req.state.api_key == {"id": 7, "name": "alpha"}
 
 
 def test_require_api_key_missing_rejected():
     req = _request({"h1": {"id": 1, "name": "alpha"}})
     with pytest.raises(HTTPException) as e:
-        require_api_key(req, x_api_key="")
+        require_api_key(req, Response(), x_api_key="")
     assert e.value.status_code == 401
 
 
 def test_require_api_key_invalid_rejected():
     req = _request({"h1": {"id": 1, "name": "alpha"}})
     with pytest.raises(HTTPException) as e:
-        require_api_key(req, x_api_key="gk_unknown")
+        require_api_key(req, Response(), x_api_key="gk_unknown")
     assert e.value.status_code == 401

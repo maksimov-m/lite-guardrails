@@ -99,3 +99,5 @@ class ApiKey(Base):
     prefix: Mapped[str] = mapped_column(String(16))
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+    # Персональный лимит запросов в минуту. NULL — глобальный дефолт из конфига.
+    rate_limit_per_min: Mapped[int | None] = mapped_column(Integer, nullable=True)

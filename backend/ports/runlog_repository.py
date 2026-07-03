@@ -23,10 +23,11 @@ class RunLogRepository(ABC):
         self,
         module: str | None = None,
         limit: int = 100,
+        offset: int = 0,
         meta_key: str | None = None,
         meta_value: str | None = None,
     ) -> list[Any]:
-        """Последние логи (новые сверху) под опциональными фильтрами."""
+        """Логи (новые сверху) под опциональными фильтрами, с offset/limit."""
 
     @abstractmethod
     def run_log_meta_keys(self) -> list[str]:
@@ -45,4 +46,23 @@ class RunLogRepository(ABC):
 
         Детекция = гуард сработал: для pii/nsfw — флаг <MODULE>_DETECT == true,
         для relevant — RELEVANT == false (пойман чит-чат/нерелевантное).
+        """
+
+    @abstractmethod
+    def delete_run_logs_before(self, cutoff: dt.datetime) -> int:
+        """Удалить логи старше cutoff (retention). Возвращает число удалённых.
+        Реализация может ничего не удалить, если чистку уже ведёт другой воркер."""
+
+    @abstractmethod
+    def run_log_metrics(self, since: dt.datetime) -> dict:
+        """Лёгкие агрегаты для Prometheus (`/metrics`): только счётчики,
+        без таймлайна/перцентилей — запрос дешёвый, годится под частый scrape.
+
+        Формат:
+        {
+          "total": int,                                    # всего прогонов
+          "modules": [{"module", "runs", "detections"}],   # по модулям
+        }
+
+        Детекция трактуется так же, как в run_log_stats (гуард сработал).
         """

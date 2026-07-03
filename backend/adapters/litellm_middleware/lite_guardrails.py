@@ -103,19 +103,19 @@ class LiteGuardrails(CustomGuardrail):
 
     async def _detect(self, module: str, text: str, meta: dict) -> dict:
         r = await self._http.post(
-            f"{self.base_url}/detect/{module}", json={"text": text, "metadata": meta}
+            f"{self.base_url}/v1/detect/{module}", json={"text": text, "metadata": meta}
         )
         r.raise_for_status()
         return r.json()
 
     async def _anonymize(self, text: str) -> dict:
-        r = await self._http.post(f"{self.base_url}/anonymize", json={"text": text})
+        r = await self._http.post(f"{self.base_url}/v1/anonymize", json={"text": text})
         r.raise_for_status()
         return r.json()  # {"id": ..., "text": ...}
 
     async def _deanonymize(self, mapping_id: str, text: str) -> str:
         r = await self._http.post(
-            f"{self.base_url}/deanonymize", json={"id": mapping_id, "text": text}
+            f"{self.base_url}/v1/deanonymize", json={"id": mapping_id, "text": text}
         )
         if r.status_code == 404:  # маппинг истёк (TTL) — оставляем как есть
             return text

@@ -11,6 +11,7 @@ from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
+from backend.adapters.rate_limit import InMemoryRateLimiter
 from backend.adapters.store import InMemoryMappingStore
 from backend.engine import GuardEngine
 from backend.entrypoints.app import create_app
@@ -31,6 +32,9 @@ class InMemoryCrud(CrudRepository):
 
     def list(self):
         return [self._row(i, d) for i, d in sorted(self._rows.items())]
+
+    def list_page(self, limit, offset=0):
+        return self.list()[max(offset, 0):max(offset, 0) + limit]
 
     def get(self, row_id):
         d = self._rows.get(row_id)
@@ -82,7 +86,7 @@ class InMemoryRunLog(RunLogRepository):
         for rec in batch:
             self._logs.append(SimpleNamespace(id=next(self._seq), **rec))
 
-    def query_run_logs(self, module=None, limit=100, meta_key=None, meta_value=None):
+    def query_run_logs(self, module=None, limit=100, offset=0, meta_key=None, meta_value=None):
         rows = list(reversed(self._logs))  # новые сверху
         if module:
             rows = [r for r in rows if r.module == module]
@@ -91,7 +95,7 @@ class InMemoryRunLog(RunLogRepository):
                 m = r.meta or {}
                 return meta_key in m and (meta_value is None or str(m[meta_key]) == meta_value)
             rows = [r for r in rows if ok(r)]
-        return rows[:limit]
+        return rows[max(offset, 0):max(offset, 0) + limit]
 
     def run_log_meta_keys(self):
         keys = set()
@@ -165,6 +169,32 @@ class InMemoryRunLog(RunLogRepository):
             "pii_classes": pii_classes,
         }
 
+    def delete_run_logs_before(self, cutoff):
+        before = len(self._logs)
+        self._logs = [r for r in self._logs if r.created_at >= cutoff]
+        return before - len(self._logs)
+
+    def run_log_metrics(self, since):
+        import json
+        from collections import defaultdict
+
+        def detected(r):
+            out = json.loads(r.output)
+            if r.module == "relevant":
+                return out.get("RELEVANT") is False
+            return out.get(f"{r.module.upper()}_DETECT") is True
+
+        agg = defaultdict(lambda: [0, 0])  # module -> [runs, detections]
+        for r in self._logs:
+            if r.created_at >= since:
+                agg[r.module][0] += 1
+                agg[r.module][1] += bool(detected(r))
+        modules = [
+            {"module": m, "runs": v[0], "detections": v[1]}
+            for m, v in sorted(agg.items())
+        ]
+        return {"total": sum(m["runs"] for m in modules), "modules": modules}
+
 
 class SyncRunLogger:
     """Замена RunLogger для тестов: пишет синхронно (без очереди/потока)."""
@@ -192,11 +222,13 @@ def make_client():
         api_keys=InMemoryCrud(),
         version=InMemoryVersion(),
         runlog=InMemoryRunLog(),
+        ping=lambda: True,  # in-memory БД всегда «жива» (для health/ready-проб)
     )
     app = create_app()  # без lifespan — состояние ставим руками, БД не поднимается
     app.state.repo = repo
     app.state.guard = GuardEngine(repo.pii, repo.nsfw, repo.relevant, repo.version)
     app.state.store = InMemoryMappingStore()
+    app.state.rate_limiter = InMemoryRateLimiter()
     app.state.api_keys = load_api_keys(repo.api_keys)
     app.state.runlog = SyncRunLogger(repo.runlog)
     return TestClient(app), repo

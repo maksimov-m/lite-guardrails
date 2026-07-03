@@ -45,10 +45,18 @@ class SqlDatabase:
             order_by=(RelevantCategory.type,),
         )
         self.api_keys = SqlCrudRepository(
-            ApiKey, updatable=("name", "enabled"), order_by=(ApiKey.id,)
+            ApiKey,
+            updatable=("name", "enabled", "rate_limit_per_min"),
+            order_by=(ApiKey.id,),
         )
         self.version = SqlVersionStore()
         self.runlog = SqlRunLogRepository()
+
+    def ping(self) -> bool:
+        """Проверка живости БД (для readiness-пробы). Бросает при недоступности."""
+        with engine.connect() as c:
+            c.execute(text("SELECT 1"))
+        return True
 
     def init(self) -> None:
         wait_for_db()

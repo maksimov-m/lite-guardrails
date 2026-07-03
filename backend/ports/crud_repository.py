@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -14,6 +16,11 @@ class CrudRepository(ABC):
     @abstractmethod
     def list(self) -> list[Any]:
         """Все записи (в стабильном для UI порядке)."""
+
+    @abstractmethod
+    def list_page(self, limit: int, offset: int = 0) -> list[Any]:
+        """Срез записей в том же порядке, что list() — для пагинации в админке.
+        list() остаётся полным: движок собирает детекторы по всем записям."""
 
     @abstractmethod
     def get(self, row_id: int) -> Any | None:
