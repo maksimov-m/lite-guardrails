@@ -118,6 +118,15 @@ th { color: var(--muted); font-weight: 600; }
 }
 .word-chip button { padding: 0 4px; font-size: 12px; line-height: 1; }
 
+/* --- логи: раскрывающиеся строки --- */
+.danger-text { color: var(--danger); }
+.log-detail { padding: 8px 0 4px; }
+.log-json {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px; margin: 4px 0 0;
+  white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow: auto;
+}
+
 /* --- логин --- */
 .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
 .login-card {

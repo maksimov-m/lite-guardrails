@@ -3,34 +3,44 @@ import * as api from "./api.js";
 
 // PII-правила — regex-сигнатуры, сгруппированные по типу (EMAIL, PHONE…).
 // На один тип может быть несколько regex.
+const PAGE = 50;
+
 export default function PiiRules({ onError }) {
   const [rules, setRules] = useState([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [type, setType] = useState("");
   const [regex, setRegex] = useState("");
 
-  const load = async () => {
-    try { setRules((await api.listPii()).rules); onError(""); }
-    catch (e) { onError(e.message); }
+  const load = async (offset) => {
+    try {
+      const r = await api.listPii(PAGE, offset);
+      setRules(r.rules);
+      setHasMore(r.has_more);
+      onError("");
+    } catch (e) { onError(e.message); }
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(page * PAGE); }, [page]);
 
   const add = async () => {
     if (!type.trim() || !regex.trim()) return;
     try {
       await api.createPii({ type: type.trim(), regex: regex.trim(), enabled: true });
-      setRegex(""); load();
+      setRegex("");
+      page === 0 ? load(0) : setPage(0);
     } catch (e) { onError(e.message); }
   };
+  const reload = () => load(page * PAGE);
   const toggle = async (r) => {
-    try { await api.patchPii(r.id, { enabled: !r.enabled }); load(); }
+    try { await api.patchPii(r.id, { enabled: !r.enabled }); reload(); }
     catch (e) { onError(e.message); }
   };
   const saveRegex = async (r, newRegex) => {
-    try { await api.patchPii(r.id, { regex: newRegex }); load(); onError(""); return true; }
+    try { await api.patchPii(r.id, { regex: newRegex }); reload(); onError(""); return true; }
     catch (e) { onError(e.message); return false; } // 400 с бэка = невалидный regex
   };
   const remove = async (r) => {
-    try { await api.deletePii(r.id); load(); }
+    try { await api.deletePii(r.id); reload(); }
     catch (e) { onError(e.message); }
   };
 
@@ -61,6 +71,18 @@ export default function PiiRules({ onError }) {
         </div>
       ))}
       {types.length === 0 && <p className="muted">правил нет</p>}
+
+      {(hasMore || page > 0) && (
+        <div className="row" style={{ marginTop: 12, justifyContent: "flex-end" }}>
+          <button className="ghost" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+            ← Назад
+          </button>
+          <span className="muted">стр. {page + 1}</span>
+          <button className="ghost" disabled={!hasMore} onClick={() => setPage((p) => p + 1)}>
+            Вперёд →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // Тонкая обёртка над API гуарда.
 // Хранит в localStorage: базовый URL, admin-токен (для /admin/*) и клиентский
-// API-ключ (для /detect, /anonymize, /deanonymize). Настраивается в UI.
+// API-ключ (для /v1/detect, /v1/anonymize, /v1/deanonymize). Настраивается в UI.
 
 export function getConfig() {
   return {
@@ -43,18 +43,21 @@ async function request(method, path, { body, admin, apiKey } = {}) {
 }
 
 // --- детекция / демо (требуют клиентский X-API-Key) ---
+// Публичный контракт версионирован: /v1/... (админка/инфра — без версии).
+const V1 = "/v1";
 export const detect = (module, text, metadata) =>
-  request("POST", `/detect/${module}`, {
+  request("POST", `${V1}/detect/${module}`, {
     body: metadata ? { text, metadata } : { text },
     apiKey: true,
   });
 export const anonymize = (text) =>
-  request("POST", "/anonymize", { body: { text }, apiKey: true });
+  request("POST", `${V1}/anonymize`, { body: { text }, apiKey: true });
 export const deanonymize = (id, text) =>
-  request("POST", "/deanonymize", { body: { id, text }, apiKey: true });
+  request("POST", `${V1}/deanonymize`, { body: { id, text }, apiKey: true });
 
 // --- админ: PII (regex-сигнатуры по типам) ---
-export const listPii = () => request("GET", "/admin/pii", { admin: true });
+export const listPii = (limit = 50, offset = 0) =>
+  request("GET", `/admin/pii?limit=${limit}&offset=${offset}`, { admin: true });
 export const createPii = (rule) =>
   request("POST", "/admin/pii", { body: rule, admin: true });
 export const patchPii = (id, patch) =>
@@ -83,8 +86,11 @@ export const deleteCat = (id) =>
 
 // --- админ: API-ключи клиентов ---
 export const listKeys = () => request("GET", "/admin/api-keys", { admin: true });
-export const createKey = (name) =>
-  request("POST", "/admin/api-keys", { body: { name }, admin: true });
+export const createKey = (name, rateLimitPerMin = null) =>
+  request("POST", "/admin/api-keys", {
+    body: { name, rate_limit_per_min: rateLimitPerMin },
+    admin: true,
+  });
 export const patchKey = (id, patch) =>
   request("PATCH", `/admin/api-keys/${id}`, { body: patch, admin: true });
 export const deleteKey = (id) =>
@@ -94,8 +100,8 @@ export const deleteKey = (id) =>
 export const getVersion = () => request("GET", "/admin/version", { admin: true });
 
 // --- админ: логи прогонов ---
-export const getLogs = (module, limit = 100, metaKey, metaValue) => {
-  let path = `/admin/logs?limit=${limit}`;
+export const getLogs = (module, limit = 50, offset = 0, metaKey, metaValue) => {
+  let path = `/admin/logs?limit=${limit}&offset=${offset}`;
   if (module) path += `&module=${module}`;
   if (metaKey) path += `&meta_key=${encodeURIComponent(metaKey)}`;
   if (metaValue) path += `&meta_value=${encodeURIComponent(metaValue)}`;

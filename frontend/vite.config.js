@@ -10,9 +10,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/detect": apiProxy,
-      "/anonymize": apiProxy,
-      "/deanonymize": apiProxy,
+      "/v1": apiProxy,
       "/admin": apiProxy,
       "/health": apiProxy,
     },

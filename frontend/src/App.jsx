@@ -17,6 +17,7 @@ const NAV = [
 
 export default function App() {
   const [authed, setAuthed] = useState(false);
+  const [checking, setChecking] = useState(true); // восстанавливаем сессию из localStorage
   const [tab, setTab] = useState("dashboard");
   const [error, setError] = useState("");
   const [theme, setTheme] = useState(localStorage.getItem("gr_theme") || "light");
@@ -26,11 +27,22 @@ export default function App() {
     localStorage.setItem("gr_theme", theme);
   }, [theme]);
 
+  // При загрузке страницы: если токен уже был сохранён — валидируем его и не
+  // требуем повторный вход. Невалидный (напр. сменили на сервере) — чистим.
+  useEffect(() => {
+    if (!localStorage.getItem("gr_token")) { setChecking(false); return; }
+    api.getVersion()
+      .then(() => setAuthed(true))
+      .catch(() => localStorage.removeItem("gr_token"))
+      .finally(() => setChecking(false));
+  }, []);
+
   const logout = () => {
     localStorage.removeItem("gr_token");
     setAuthed(false);
   };
 
+  if (checking) return <div className="login-wrap"><div className="muted">Загрузка…</div></div>;
   if (!authed) return <Login onLogin={() => setAuthed(true)} />;
 
   return (
