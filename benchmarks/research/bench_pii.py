@@ -23,14 +23,26 @@ from tqdm import tqdm
 DATA = os.path.join(os.path.dirname(__file__), "data")
 
 FAMILY_BY_TAG = {
-    "FIRST_NAME": "person", "LAST_NAME": "person", "MIDDLE_NAME": "person",
-    "COUNTRY": "location", "REGION": "location", "DISTRICT": "location",
-    "CITY": "location", "STREET": "location", "HOUSE": "location",
-    "EMAIL": "contacts", "PHONE": "contacts", "URL": "contacts",
+    "FIRST_NAME": "person",
+    "LAST_NAME": "person",
+    "MIDDLE_NAME": "person",
+    "COUNTRY": "location",
+    "REGION": "location",
+    "DISTRICT": "location",
+    "CITY": "location",
+    "STREET": "location",
+    "HOUSE": "location",
+    "EMAIL": "contacts",
+    "PHONE": "contacts",
+    "URL": "contacts",
     "IP_ADDRESS": "contacts",
-    "PASSPORT": "documents", "INN": "documents", "SNILS": "documents",
-    "OMS": "documents", "DRIVER_LICENSE": "documents",
-    "BIRTH_CERTIFICATE": "documents", "MILITARY_ID": "documents",
+    "PASSPORT": "documents",
+    "INN": "documents",
+    "SNILS": "documents",
+    "OMS": "documents",
+    "DRIVER_LICENSE": "documents",
+    "BIRTH_CERTIFICATE": "documents",
+    "MILITARY_ID": "documents",
     "CREDIT_CARD": "documents",
 }
 FAMILIES = ("contacts", "documents", "person", "location")
@@ -85,17 +97,19 @@ def make_lite():
 
     det = PiiDetector()
     fam = {
-        "email": "contacts", "phone": "contacts", "url": "contacts", "ip": "contacts",
-        "bank_card": "documents", "snils": "documents", "inn": "documents",
+        "email": "contacts",
+        "phone": "contacts",
+        "url": "contacts",
+        "ip": "contacts",
+        "bank_card": "documents",
+        "snils": "documents",
+        "inn": "documents",
         "passport": "documents",
     }
 
     def run(text):
         out = det.detect(text)
-        return [
-            (d["start"], d["end"], fam[d["class"]])
-            for d in out["data"] if d["class"] in fam
-        ]
+        return [(d["start"], d["end"], fam[d["class"]]) for d in out["data"] if d["class"] in fam]
 
     return run
 
@@ -104,20 +118,27 @@ def make_presidio():
     from presidio_analyzer import AnalyzerEngine
     from presidio_analyzer.nlp_engine import NlpEngineProvider
 
-    provider = NlpEngineProvider(nlp_configuration={
-        "nlp_engine_name": "spacy",
-        "models": [{"lang_code": "ru", "model_name": "ru_core_news_md"}],
-    })
+    provider = NlpEngineProvider(
+        nlp_configuration={
+            "nlp_engine_name": "spacy",
+            "models": [{"lang_code": "ru", "model_name": "ru_core_news_md"}],
+        }
+    )
     nlp = provider.create_engine()
     # Дефолтный registry сам соберёт рекогнайзеры под ru: pattern-based (email,
     # phone, credit card, IP, URL — язык-агностичны) + PERSON/LOC из spaCy-ru.
     analyzer = AnalyzerEngine(nlp_engine=nlp, supported_languages=["ru"])
     fam = {
-        "EMAIL_ADDRESS": "contacts", "PHONE_NUMBER": "contacts",
-        "URL": "contacts", "IP_ADDRESS": "contacts",
+        "EMAIL_ADDRESS": "contacts",
+        "PHONE_NUMBER": "contacts",
+        "URL": "contacts",
+        "IP_ADDRESS": "contacts",
         "CREDIT_CARD": "documents",
-        "PERSON": "person", "PER": "person",
-        "LOCATION": "location", "LOC": "location", "GPE": "location",
+        "PERSON": "person",
+        "PER": "person",
+        "LOCATION": "location",
+        "LOC": "location",
+        "GPE": "location",
     }
 
     def run(text):
@@ -135,15 +156,23 @@ def make_llm_guard():
     from llm_guard.input_scanners.anonymize_helpers import BERT_LARGE_NER_CONF
     from llm_guard.vault import Vault
 
-    scanner = Anonymize(Vault(), recognizer_conf=BERT_LARGE_NER_CONF,
-                        language="en")  # RU не поддерживается — честно фиксируем
+    scanner = Anonymize(
+        Vault(), recognizer_conf=BERT_LARGE_NER_CONF, language="en"
+    )  # RU не поддерживается — честно фиксируем
     fam = {
-        "EMAIL_ADDRESS": "contacts", "EMAIL_ADDRESS_RE": "contacts",
-        "PHONE_NUMBER": "contacts", "PHONE_NUMBER_WITH_EXT": "contacts",
-        "URL": "contacts", "URL_RE": "contacts", "IP_ADDRESS": "contacts",
-        "CREDIT_CARD": "documents", "CREDIT_CARD_RE": "documents",
-        "US_SSN": "documents", "US_SSN_RE": "documents",
-        "PERSON": "person", "LOCATION": "location",
+        "EMAIL_ADDRESS": "contacts",
+        "EMAIL_ADDRESS_RE": "contacts",
+        "PHONE_NUMBER": "contacts",
+        "PHONE_NUMBER_WITH_EXT": "contacts",
+        "URL": "contacts",
+        "URL_RE": "contacts",
+        "IP_ADDRESS": "contacts",
+        "CREDIT_CARD": "documents",
+        "CREDIT_CARD_RE": "documents",
+        "US_SSN": "documents",
+        "US_SSN_RE": "documents",
+        "PERSON": "person",
+        "LOCATION": "location",
     }
     analyzer = scanner._analyzer  # используем анализатор напрямую: нужны спаны
 
@@ -192,9 +221,7 @@ def evaluate(run, rows, desc="eval"):
         return {"precision": round(p, 3), "recall": round(r, 3), "f1": round(f1, 3)}
 
     families = {
-        fam: {**prf(tp[fam], fp[fam], fn[fam]),
-              "support": tp[fam] + fn[fam]}
-        for fam in FAMILIES
+        fam: {**prf(tp[fam], fp[fam], fn[fam]), "support": tp[fam] + fn[fam]} for fam in FAMILIES
     }
     total = prf(sum(tp.values()), sum(fp.values()), sum(fn.values()))
     lat.sort()
@@ -223,11 +250,9 @@ def main():
         run = factory()
         run(rows[0]["text"])  # прогрев (кэши/модель)
         results[name] = evaluate(run, rows, desc=f"PII/{name}")
-        print(json.dumps(results[name]["micro"], ensure_ascii=False),
-              results[name]["latency_ms"])
+        print(json.dumps(results[name]["micro"], ensure_ascii=False), results[name]["latency_ms"])
     with open(os.path.join(DATA, "pii_results.json"), "w", encoding="utf-8") as f:
-        json.dump({"sample_size": len(rows), "systems": results}, f,
-                  ensure_ascii=False, indent=2)
+        json.dump({"sample_size": len(rows), "systems": results}, f, ensure_ascii=False, indent=2)
     print("saved -> pii_results.json")
 
 

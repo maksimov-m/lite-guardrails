@@ -34,9 +34,14 @@ def metrics(pairs):
     prec = tp / (tp + fp) if tp + fp else 0.0
     rec = tp / (tp + fn) if tp + fn else 0.0
     f1 = 2 * prec * rec / (prec + rec) if prec + rec else 0.0
-    return {"accuracy": round((tp + tn) / len(pairs), 3), "precision": round(prec, 3),
-            "recall": round(rec, 3), "f1": round(f1, 3),
-            "n": len(pairs), "positives": tp + fn}
+    return {
+        "accuracy": round((tp + tn) / len(pairs), 3),
+        "precision": round(prec, 3),
+        "recall": round(rec, 3),
+        "f1": round(f1, 3),
+        "n": len(pairs),
+        "positives": tp + fn,
+    }
 
 
 def main():
@@ -56,8 +61,10 @@ def main():
     result = {
         "dataset": "AlexSham/Toxic_Russian_Comments (test)",
         "overall": metrics(pairs),
-        "latency_ms": {"avg": round(statistics.mean(lat), 4),
-                       "p95": round(lat[int(len(lat) * 0.95)], 4)},
+        "latency_ms": {
+            "avg": round(statistics.mean(lat), 4),
+            "p95": round(lat[int(len(lat) * 0.95)], 4),
+        },
     }
     print("\n[overall]", json.dumps(result["overall"], ensure_ascii=False))
     print("латентность:", result["latency_ms"])

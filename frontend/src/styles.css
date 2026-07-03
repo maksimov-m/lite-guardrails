@@ -146,11 +146,19 @@ button:disabled { opacity: .45; cursor: default; }
   display: flex; flex-direction: column; gap: var(--s1);
 }
 .brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
   font-family: var(--font-head);
   font-weight: 700;
   font-size: var(--t-h3);
   letter-spacing: -0.02em;
   padding: var(--s1) var(--s2) var(--s5);
+}
+
+.brand-icon {
+  flex: none;
+  transform: rotate(-8deg);
 }
 .nav-btn {
   text-align: left; width: 100%;

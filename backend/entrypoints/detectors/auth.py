@@ -9,6 +9,7 @@
 import hashlib
 import logging
 import secrets
+import time
 
 from fastapi import Header, HTTPException, Request, Response
 
@@ -18,6 +19,11 @@ log = logging.getLogger("auth")
 
 API_KEY_PREFIX = "gk_"
 _RATE_WINDOW_SECONDS = 60
+
+# Троттлинг лога fail-open: при лежащем Redis лимитер сыпал бы на КАЖДЫЙ запрос,
+# поэтому пишем не чаще раза в N секунд (на воркер).
+_FAIL_OPEN_LOG_EVERY = 30.0
+_last_fail_open_log = 0.0
 
 
 def hash_key(raw: str) -> str:
@@ -44,9 +50,7 @@ def load_api_keys(repo) -> dict[str, dict]:
     }
 
 
-def require_api_key(
-    request: Request, response: Response, x_api_key: str = Header(default="")
-):
+def require_api_key(request: Request, response: Response, x_api_key: str = Header(default="")):
     """Dependency детекшн-роутеров: валидный X-API-Key + лимит частоты.
     При успехе кладёт инфо о ключе в request.state.api_key (уходит в логи)."""
     keys = getattr(request.app.state, "api_keys", {})
@@ -67,16 +71,25 @@ def _enforce_rate_limit(request: Request, response: Response, info: dict) -> Non
     try:
         r = limiter.hit(f"key:{info['id']}", limit, _RATE_WINDOW_SECONDS)
     except Exception:
+        # fail-open: лимитер (Redis) недоступен — пропускаем запрос, но не молча.
+        global _last_fail_open_log
+        now = time.monotonic()
+        if now - _last_fail_open_log > _FAIL_OPEN_LOG_EVERY:
+            _last_fail_open_log = now
+            log.warning(
+                "rate limiter unavailable — fail-open (пропускаю без лимита)", exc_info=True
+            )
         return
     response.headers["X-RateLimit-Limit"] = str(r.limit)
     response.headers["X-RateLimit-Remaining"] = str(r.remaining)
     if not r.allowed:
-        log.warning("rate limit exceeded",
-                    extra={"key_id": info["id"], "limit": r.limit})
+        log.warning("rate limit exceeded", extra={"key_id": info["id"], "limit": r.limit})
         raise HTTPException(
             429,
             "превышен лимит запросов",
-            headers={"Retry-After": str(r.retry_after),
-                     "X-RateLimit-Limit": str(r.limit),
-                     "X-RateLimit-Remaining": "0"},
+            headers={
+                "Retry-After": str(r.retry_after),
+                "X-RateLimit-Limit": str(r.limit),
+                "X-RateLimit-Remaining": "0",
+            },
         )

@@ -16,7 +16,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install --group dev
-      - run: ruff check backend tests conftest.py
+      - run: ruff check backend tests
 
   test:
     runs-on: ubuntu-latest

@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     )
 
     database_url: str = "postgresql+psycopg2://guard:guard@localhost:5432/guard"
-    
+
     redis_url: str = "redis://localhost:6379/0"
 
     mapping_ttl_seconds: int = 3600
@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     # Логировать сырой ввод пользователя (с PII). По умолчанию False —
     # в run_logs пишется анонимизированный текст. Включать только для отладки.
     log_raw_input: bool = False
+
+    # Максимальная длина поля text (в символах) в запросах детекции/анонимизации.
+    # Больше — запрос отклоняется с 422 ещё до детекции. Защита от DoS большим
+    # вводом (relevant/regex растут по длине) и смягчение ReDoS.
+    # ~16k символов ≈ 16 КБ ASCII / ~32 КБ кириллицы. Меняется через .env, читается
+    # на старте процесса (изменение требует рестарта — как и любой env).
+    max_text_length: int = 16384
 
     # Отдавать метрики в формате Prometheus на GET /metrics. Ручка opt-in для
     # потребителя: если её не скрейпят — ничего не стоит. Выключается флагом.

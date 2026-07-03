@@ -26,13 +26,26 @@ NSFW_TARGET = 1600
 # BIO-тег -> семейство сущностей (сравниваем по семействам: у инструментов
 # разная номенклатура типов, а семейства сопоставимы)
 FAMILY_BY_TAG = {
-    "FIRST_NAME": "person", "LAST_NAME": "person", "MIDDLE_NAME": "person",
-    "COUNTRY": "location", "REGION": "location", "DISTRICT": "location",
-    "CITY": "location", "STREET": "location", "HOUSE": "location",
-    "EMAIL": "contacts", "PHONE": "contacts", "URL": "contacts", "IP_ADDRESS": "contacts",
-    "PASSPORT": "documents", "INN": "documents", "SNILS": "documents",
-    "OMS": "documents", "DRIVER_LICENSE": "documents",
-    "BIRTH_CERTIFICATE": "documents", "MILITARY_ID": "documents",
+    "FIRST_NAME": "person",
+    "LAST_NAME": "person",
+    "MIDDLE_NAME": "person",
+    "COUNTRY": "location",
+    "REGION": "location",
+    "DISTRICT": "location",
+    "CITY": "location",
+    "STREET": "location",
+    "HOUSE": "location",
+    "EMAIL": "contacts",
+    "PHONE": "contacts",
+    "URL": "contacts",
+    "IP_ADDRESS": "contacts",
+    "PASSPORT": "documents",
+    "INN": "documents",
+    "SNILS": "documents",
+    "OMS": "documents",
+    "DRIVER_LICENSE": "documents",
+    "BIRTH_CERTIFICATE": "documents",
+    "MILITARY_ID": "documents",
     "CREDIT_CARD": "documents",
 }
 
@@ -67,10 +80,14 @@ def prepare_pii(rng):
         tokens = json.loads(r["tokens"]) if isinstance(r["tokens"], str) else r["tokens"]
         tags = json.loads(r["ner_tags"]) if isinstance(r["ner_tags"], str) else r["ner_tags"]
         fams = sorted({f for f in (tag_family(t) for t in tags) if f})
-        rows.append({
-            "text": r["text"], "tokens": tokens, "ner_tags": tags,
-            "families": fams,
-        })
+        rows.append(
+            {
+                "text": r["text"],
+                "tokens": tokens,
+                "ner_tags": tags,
+                "families": fams,
+            }
+        )
     sample = stratified(rows, lambda r: ",".join(r["families"]) or "none", PII_TARGET, rng)
     return sample
 

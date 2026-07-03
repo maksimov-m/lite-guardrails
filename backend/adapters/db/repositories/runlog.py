@@ -1,91 +1,18 @@
-"""SQL-реализации портов (CRUD, версия конфига, логи прогонов).
-Схема таблиц — в models.py, подключение — в session.py."""
+"""Логи прогонов: запись пачками, выборка с фильтрами, агрегаты для дашборда
+и метрик, ретеншн-чистка старых записей. У run_logs свои паттерны доступа
+(bulk-insert, агрегации, DELETE по времени), поэтому это отдельный репозиторий,
+а не generic CRUD."""
 
 import datetime as dt
 
 from sqlalchemy import desc, select, text
 
-from backend.adapters.db.models import RunLog, Setting
+from backend.adapters.db.models import RunLog
 from backend.adapters.db.session import SessionLocal
-from backend.ports.crud_repository import CrudRepository
 from backend.ports.runlog_repository import RunLogRepository
-from backend.ports.version_store import VersionStore
 
 # Ключ advisory-локи для retention-чистки (свой, не пересекается с сид-локой).
 _CLEANUP_LOCK_KEY = 918273646
-
-
-class SqlCrudRepository(CrudRepository):
-    """Один generic CRUD на SQLAlchemy — переиспользуется для всех модулей.
-    Модель и список изменяемых полей задаются в конструкторе, методы общие."""
-
-    def __init__(self, model, updatable: tuple[str, ...], order_by: tuple = ()):
-        self._model = model
-        self._updatable = updatable
-        self._order_by = order_by or (model.id,)
-
-    def list(self) -> list:
-        with SessionLocal() as s:
-            return list(s.scalars(select(self._model).order_by(*self._order_by)).all())
-
-    def list_page(self, limit: int, offset: int = 0) -> list:
-        with SessionLocal() as s:
-            q = (select(self._model).order_by(*self._order_by)
-                 .offset(max(offset, 0)).limit(min(limit, 1000)))
-            return list(s.scalars(q).all())
-
-    def get(self, row_id: int):
-        with SessionLocal() as s:
-            return s.get(self._model, row_id)
-
-    def find_by(self, field: str, value):
-        with SessionLocal() as s:
-            return s.scalar(select(self._model).where(getattr(self._model, field) == value))
-
-    def create(self, **fields):
-        with SessionLocal() as s:
-            row = self._model(**fields)
-            s.add(row)
-            s.commit()
-            return row
-
-    def update(self, row_id: int, fields: dict):
-        with SessionLocal() as s:
-            row = s.get(self._model, row_id)
-            if not row:
-                return None
-            for name in self._updatable:
-                if fields.get(name) is not None:
-                    setattr(row, name, fields[name])
-            s.commit()
-            return row
-
-    def delete(self, row_id: int) -> bool:
-        with SessionLocal() as s:
-            row = s.get(self._model, row_id)
-            if not row:
-                return False
-            s.delete(row)
-            s.commit()
-            return True
-
-
-class SqlVersionStore(VersionStore):
-    def get_version(self) -> int:
-        with SessionLocal() as s:
-            row = s.get(Setting, "rules_version")
-            return int(row.value) if row else 0
-
-    def bump_version(self) -> int:
-        with SessionLocal() as s:
-            row = s.get(Setting, "rules_version")
-            new = (int(row.value) + 1) if row else 1
-            if row:
-                row.value = str(new)
-            else:
-                s.add(Setting(key="rules_version", value=str(new)))
-            s.commit()
-            return new
 
 
 class SqlRunLogRepository(RunLogRepository):
@@ -127,34 +54,29 @@ class SqlRunLogRepository(RunLogRepository):
     def run_log_stats(self, since: dt.datetime, bucket_seconds: int) -> dict:
         """Агрегаты для дашборда. Все запросы отсечены по created_at (индекс),
         поэтому нагрузка не зависит от размера всей таблицы — только от окна.
-        Детекция = гуард сработал: для pii/nsfw это <MODULE>_DETECT = true,
-        для relevant — RELEVANT = false (пойман чит-чат/нерелевантное)."""
-        detect_flag = (
-            "CASE WHEN module = 'relevant' "
-            "THEN ((output::jsonb) ->> 'RELEVANT')::boolean IS FALSE "
-            "ELSE ((output::jsonb) ->> (upper(module) || '_DETECT'))::boolean IS TRUE END"
-        )
+        Детекции считаем по столбцу `detected` (посчитан на записи) — без
+        построчного парсинга output::jsonb, что кратно быстрее на больших окнах."""
         with SessionLocal() as s:
             modules = s.execute(
                 text(
-                    f"""SELECT module,
-                               COUNT(*) AS runs,
-                               COUNT(*) FILTER (WHERE {detect_flag}) AS detections,
-                               AVG(duration_ms) AS avg_ms,
-                               PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_ms) AS p95_ms
-                        FROM run_logs WHERE created_at >= :since
-                        GROUP BY module ORDER BY module"""
+                    """SELECT module,
+                              COUNT(*) AS runs,
+                              COUNT(*) FILTER (WHERE detected) AS detections,
+                              AVG(duration_ms) AS avg_ms,
+                              PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_ms) AS p95_ms
+                       FROM run_logs WHERE created_at >= :since
+                       GROUP BY module ORDER BY module"""
                 ),
                 {"since": since},
             ).all()
             timeline = s.execute(
                 text(
-                    f"""SELECT to_timestamp(floor(extract(epoch FROM created_at) / :bs) * :bs)
-                                   AS bucket,
-                               COUNT(*) AS runs,
-                               COUNT(*) FILTER (WHERE {detect_flag}) AS detections
-                        FROM run_logs WHERE created_at >= :since
-                        GROUP BY bucket ORDER BY bucket"""
+                    """SELECT to_timestamp(floor(extract(epoch FROM created_at) / :bs) * :bs)
+                                  AS bucket,
+                              COUNT(*) AS runs,
+                              COUNT(*) FILTER (WHERE detected) AS detections
+                       FROM run_logs WHERE created_at >= :since
+                       GROUP BY bucket ORDER BY bucket"""
                 ),
                 {"since": since, "bs": bucket_seconds},
             ).all()
@@ -198,26 +120,18 @@ class SqlRunLogRepository(RunLogRepository):
         }
 
     def run_log_metrics(self, since: dt.datetime) -> dict:
-        detect_flag = (
-            "CASE WHEN module = 'relevant' "
-            "THEN ((output::jsonb) ->> 'RELEVANT')::boolean IS FALSE "
-            "ELSE ((output::jsonb) ->> (upper(module) || '_DETECT'))::boolean IS TRUE END"
-        )
         with SessionLocal() as s:
             rows = s.execute(
                 text(
-                    f"""SELECT module,
-                               COUNT(*) AS runs,
-                               COUNT(*) FILTER (WHERE {detect_flag}) AS detections
-                        FROM run_logs WHERE created_at >= :since
-                        GROUP BY module ORDER BY module"""
+                    """SELECT module,
+                              COUNT(*) AS runs,
+                              COUNT(*) FILTER (WHERE detected) AS detections
+                       FROM run_logs WHERE created_at >= :since
+                       GROUP BY module ORDER BY module"""
                 ),
                 {"since": since},
             ).all()
-        modules = [
-            {"module": r.module, "runs": r.runs, "detections": r.detections}
-            for r in rows
-        ]
+        modules = [{"module": r.module, "runs": r.runs, "detections": r.detections} for r in rows]
         return {"total": sum(m["runs"] for m in modules), "modules": modules}
 
     def delete_run_logs_before(self, cutoff: dt.datetime) -> int:

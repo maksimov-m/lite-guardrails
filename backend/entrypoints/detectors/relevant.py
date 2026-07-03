@@ -6,11 +6,13 @@ from backend.entrypoints.detectors.schemas import BatchIn, TextIn
 router = APIRouter(tags=["relevant"])
 
 
+# Обычный def (не async): CPU-bound детекция уходит в threadpool и не блокирует
+# event loop. Подробнее — комментарий в pii.py / health.py.
 @router.post("/detect/relevant")
-async def detect_relevant(body: TextIn, request: Request):
+def detect_relevant(body: TextIn, request: Request):
     return run_detect(request, "relevant", body.text, body.metadata)
 
 
 @router.post("/detect/relevant/batch")
-async def detect_relevant_batch(body: BatchIn, request: Request):
+def detect_relevant_batch(body: BatchIn, request: Request):
     return run_batch(request, "relevant", body.texts)

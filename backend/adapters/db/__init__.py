@@ -6,7 +6,7 @@ from backend.adapters.db.database import SqlDatabase, wait_for_db
 from backend.adapters.db.models import (
     ApiKey,
     Base,
-    NsfwDictionary,
+    NSFWDictionary,
     PiiRule,
     RelevantCategory,
     RunLog,
@@ -22,7 +22,7 @@ from backend.adapters.db.session import SessionLocal, engine
 __all__ = [
     "ApiKey",
     "Base",
-    "NsfwDictionary",
+    "NSFWDictionary",
     "PiiRule",
     "RelevantCategory",
     "RunLog",

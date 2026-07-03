@@ -3,7 +3,7 @@
 
 import datetime as dt
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, Index, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -32,6 +32,10 @@ class RunLog(Base):
     """Лог одного прогона детекции: вход, выход, время обработки."""
 
     __tablename__ = "run_logs"
+    # Составной индекс под агрегаты дашборда: pii_classes (module='pii' + окно по
+    # времени) и группировки по модулю в пределах окна. Одиночные индексы на
+    # created_at/module остаются для чистых выборок по одному полю.
+    __table_args__ = (Index("ix_run_logs_module_created", "module", "created_at"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     created_at: Mapped[dt.datetime] = mapped_column(
@@ -41,12 +45,16 @@ class RunLog(Base):
     input_text: Mapped[str] = mapped_column(Text)
     output: Mapped[str] = mapped_column(Text)  # JSON-строка результата
     duration_ms: Mapped[float] = mapped_column(Float)
+    # Флаг «гуард сработал», посчитанный на записи (приложение уже держит
+    # результат — парсить JSON не нужно). Дашборд/метрики считают детекции по
+    # этому столбцу вместо построчного output::jsonb -> кратно быстрее.
+    detected: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
     # Произвольные метаданные запроса (user_id, app, env...). JSONB — чтобы
     # фильтровать логи по ключу/значению прямо в SQL.
     meta: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
-class NsfwDictionary(Base):
+class NSFWDictionary(Base):
     """Словарь NSFW: имя + слова одной строкой (через пробелы/переносы).
     Целиком включается/выключается."""
 

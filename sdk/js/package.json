@@ -1,0 +1,27 @@
+{
+  "name": "lite-guardrails-client",
+  "version": "1.0.0",
+  "description": "JavaScript/TypeScript client for the lite-guardrails API (PII / NSFW / relevant, anonymize / deanonymize)",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "guardrails",
+    "pii",
+    "nsfw",
+    "anonymize",
+    "llm"
+  ],
+  "license": "MIT"
+}

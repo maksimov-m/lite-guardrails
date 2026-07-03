@@ -84,6 +84,12 @@ export const patchCat = (id, patch) =>
 export const deleteCat = (id) =>
   request("DELETE", `/admin/relevant/${id}`, { admin: true });
 
+// Настройки модуля relevant (этапы детекции, не привязанные к категориям).
+export const getRelevantSettings = () =>
+  request("GET", "/admin/relevant/settings", { admin: true });
+export const patchRelevantSettings = (patch) =>
+  request("PUT", "/admin/relevant/settings", { body: patch, admin: true });
+
 // --- админ: API-ключи клиентов ---
 export const listKeys = () => request("GET", "/admin/api-keys", { admin: true });
 export const createKey = (name, rateLimitPerMin = null) =>

@@ -26,13 +26,21 @@ DATA = os.path.join(os.path.dirname(__file__), "data")
 
 # тип в датасете -> наш канонический класс
 GOLD_TO_CANON = {
-    "PHONE_NUMBER": "phone", "EMAIL": "email", "BANK_CARD_NUMBER": "bank_card",
-    "INN": "inn", "SNILS": "snils", "PASSPORT_NUMBER": "passport",
+    "PHONE_NUMBER": "phone",
+    "EMAIL": "email",
+    "BANK_CARD_NUMBER": "bank_card",
+    "INN": "inn",
+    "SNILS": "snils",
+    "PASSPORT_NUMBER": "passport",
 }
 # класс нашего детектора -> канонический (url/ip в бенчмарке не размечены — опускаем)
 OURS_TO_CANON = {
-    "phone": "phone", "email": "email", "bank_card": "bank_card",
-    "inn": "inn", "snils": "snils", "passport_rf": "passport",
+    "phone": "phone",
+    "email": "email",
+    "bank_card": "bank_card",
+    "inn": "inn",
+    "snils": "snils",
+    "passport_rf": "passport",
 }
 SUPPORTED = set(GOLD_TO_CANON.values())
 
@@ -46,7 +54,8 @@ def make_detector():
         out = det.detect(text)
         return [
             (d["start"], d["end"], OURS_TO_CANON[d["class"]])
-            for d in out["data"] if d["class"] in OURS_TO_CANON
+            for d in out["data"]
+            if d["class"] in OURS_TO_CANON
         ]
 
     return run
@@ -65,13 +74,15 @@ def score(rows, run, supported_only):
     fn = defaultdict(int)
     lat = []
     for text, ents in rows:
-        gold = [
-            (e["start"], e["end"], GOLD_TO_CANON[e["type"]])
-            for e in ents if e["type"] in GOLD_TO_CANON
-        ] if supported_only else [
-            (e["start"], e["end"], GOLD_TO_CANON.get(e["type"], e["type"]))
-            for e in ents
-        ]
+        gold = (
+            [
+                (e["start"], e["end"], GOLD_TO_CANON[e["type"]])
+                for e in ents
+                if e["type"] in GOLD_TO_CANON
+            ]
+            if supported_only
+            else [(e["start"], e["end"], GOLD_TO_CANON.get(e["type"], e["type"])) for e in ents]
+        )
         t0 = time.perf_counter()
         pred = run(text)
         lat.append((time.perf_counter() - t0) * 1000)
@@ -93,13 +104,17 @@ def score(rows, run, supported_only):
                 fn[gc] += 1
 
     classes = SUPPORTED if supported_only else set(tp) | set(fp) | set(fn)
-    per_type = {c: {**prf(tp[c], fp[c], fn[c]), "support": tp[c] + fn[c]}
-                for c in sorted(classes)}
+    per_type = {c: {**prf(tp[c], fp[c], fn[c]), "support": tp[c] + fn[c]} for c in sorted(classes)}
     micro = prf(sum(tp.values()), sum(fp.values()), sum(fn.values()))
     lat.sort()
-    return {"micro": micro, "per_type": per_type,
-            "latency_ms": {"avg": round(statistics.mean(lat), 3),
-                           "p95": round(lat[int(len(lat) * 0.95)], 3)}}
+    return {
+        "micro": micro,
+        "per_type": per_type,
+        "latency_ms": {
+            "avg": round(statistics.mean(lat), 3),
+            "p95": round(lat[int(len(lat) * 0.95)], 3),
+        },
+    }
 
 
 def main():
@@ -115,8 +130,14 @@ def main():
         "supported_types": score(list(tqdm(rows, desc="supported", ncols=80)), run, True),
         "overall": score(rows, run, False),
     }
-    print("\n[supported — только наши 6 типов]", json.dumps(result["supported_types"]["micro"], ensure_ascii=False))
-    print("[overall — все 13 типов]        ", json.dumps(result["overall"]["micro"], ensure_ascii=False))
+    print(
+        "\n[supported — только наши 6 типов]",
+        json.dumps(result["supported_types"]["micro"], ensure_ascii=False),
+    )
+    print(
+        "[overall — все 13 типов]        ",
+        json.dumps(result["overall"]["micro"], ensure_ascii=False),
+    )
     print("латентность:", result["supported_types"]["latency_ms"])
     with open(os.path.join(DATA, "external_pii_results.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)

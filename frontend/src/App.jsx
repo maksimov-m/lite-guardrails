@@ -6,6 +6,7 @@ import RulesTab from "./RulesTab.jsx";
 import ApiKeysTab from "./ApiKeysTab.jsx";
 import LogsTab from "./LogsTab.jsx";
 import DemoTab from "./DemoTab.jsx";
+import FeatherIcon from "./FeatherIcon.jsx";
 
 const NAV = [
   { key: "dashboard", label: "Дашборд" },
@@ -48,7 +49,7 @@ export default function App() {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <div className="brand">guardrails</div>
+        <div className="brand"><FeatherIcon className="brand-icon" size="1.5em" />guardrails</div>
         {NAV.map((n) => (
           <button
             key={n.key}

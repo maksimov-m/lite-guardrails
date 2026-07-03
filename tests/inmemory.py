@@ -18,6 +18,7 @@ from backend.entrypoints.app import create_app
 from backend.entrypoints.detectors.auth import load_api_keys
 from backend.ports.crud_repository import CrudRepository
 from backend.ports.runlog_repository import RunLogRepository
+from backend.ports.settings_store import SettingsStore
 from backend.ports.version_store import VersionStore
 
 
@@ -34,7 +35,7 @@ class InMemoryCrud(CrudRepository):
         return [self._row(i, d) for i, d in sorted(self._rows.items())]
 
     def list_page(self, limit, offset=0):
-        return self.list()[max(offset, 0):max(offset, 0) + limit]
+        return self.list()[max(offset, 0) : max(offset, 0) + limit]
 
     def get(self, row_id):
         d = self._rows.get(row_id)
@@ -77,6 +78,17 @@ class InMemoryVersion(VersionStore):
         return self._v
 
 
+class InMemorySettings(SettingsStore):
+    def __init__(self):
+        self._d: dict[str, str] = {}
+
+    def get(self, key, default=None):
+        return self._d.get(key, default)
+
+    def set(self, key, value):
+        self._d[key] = value
+
+
 class InMemoryRunLog(RunLogRepository):
     def __init__(self):
         self._logs: list[SimpleNamespace] = []
@@ -91,11 +103,13 @@ class InMemoryRunLog(RunLogRepository):
         if module:
             rows = [r for r in rows if r.module == module]
         if meta_key:
+
             def ok(r):
                 m = r.meta or {}
                 return meta_key in m and (meta_value is None or str(m[meta_key]) == meta_value)
+
             rows = [r for r in rows if ok(r)]
-        return rows[max(offset, 0):max(offset, 0) + limit]
+        return rows[max(offset, 0) : max(offset, 0) + limit]
 
     def run_log_meta_keys(self):
         keys = set()
@@ -122,13 +136,15 @@ class InMemoryRunLog(RunLogRepository):
         modules = []
         for module in sorted(by_module):
             ms = sorted(x.duration_ms for x in by_module[module])
-            modules.append({
-                "module": module,
-                "runs": len(ms),
-                "detections": sum(detected(x) for x in by_module[module]),
-                "avg_ms": round(sum(ms) / len(ms), 2),
-                "p95_ms": round(ms[max(0, int(len(ms) * 0.95) - 1)], 2),
-            })
+            modules.append(
+                {
+                    "module": module,
+                    "runs": len(ms),
+                    "detections": sum(detected(x) for x in by_module[module]),
+                    "avg_ms": round(sum(ms) / len(ms), 2),
+                    "p95_ms": round(ms[max(0, int(len(ms) * 0.95) - 1)], 2),
+                }
+            )
 
         buckets = defaultdict(lambda: [0, 0])
         for r in rows:
@@ -147,8 +163,7 @@ class InMemoryRunLog(RunLogRepository):
             if r.meta and r.meta.get("api_key"):
                 key_runs[r.meta["api_key"]] += 1
         top_keys = [
-            {"name": k, "runs": n}
-            for k, n in sorted(key_runs.items(), key=lambda kv: -kv[1])[:5]
+            {"name": k, "runs": n} for k, n in sorted(key_runs.items(), key=lambda kv: -kv[1])[:5]
         ]
 
         cls_counts = defaultdict(int)
@@ -189,10 +204,7 @@ class InMemoryRunLog(RunLogRepository):
             if r.created_at >= since:
                 agg[r.module][0] += 1
                 agg[r.module][1] += bool(detected(r))
-        modules = [
-            {"module": m, "runs": v[0], "detections": v[1]}
-            for m, v in sorted(agg.items())
-        ]
+        modules = [{"module": m, "runs": v[0], "detections": v[1]} for m, v in sorted(agg.items())]
         return {"total": sum(m["runs"] for m in modules), "modules": modules}
 
 
@@ -202,33 +214,50 @@ class SyncRunLogger:
     def __init__(self, repo):
         self._repo = repo
 
-    def log(self, module, input_text, output, duration_ms, meta=None):
-        self._repo.write_run_logs([{
-            "created_at": dt.datetime.utcnow(),
-            "module": module,
-            "input_text": input_text,
-            "output": output,
-            "duration_ms": duration_ms,
-            "meta": meta or None,
-        }])
+    def log(self, module, input_text, output, duration_ms, meta=None, detected=False):
+        self._repo.write_run_logs(
+            [
+                {
+                    "created_at": dt.datetime.utcnow(),
+                    "module": module,
+                    "input_text": input_text,
+                    "output": output,
+                    "duration_ms": duration_ms,
+                    "detected": detected,
+                    "meta": meta or None,
+                }
+            ]
+        )
 
 
-def make_client():
-    """Собрать (client, repo) на in-memory зависимостях. repo — для инспекции в тестах."""
+def build_app():
+    """Собрать (app, repo) на in-memory зависимостях, без lifespan (БД/Redis не
+    поднимаются — состояние ставим руками). repo — SimpleNamespace для инспекции
+    в тестах. Предпочтительная точка входа для фикстур: обернуть в `with TestClient`."""
     repo = SimpleNamespace(
         pii=InMemoryCrud(),
         nsfw=InMemoryCrud(),
         relevant=InMemoryCrud(),
         api_keys=InMemoryCrud(),
         version=InMemoryVersion(),
+        settings=InMemorySettings(),
         runlog=InMemoryRunLog(),
         ping=lambda: True,  # in-memory БД всегда «жива» (для health/ready-проб)
     )
-    app = create_app()  # без lifespan — состояние ставим руками, БД не поднимается
+    app = create_app()
     app.state.repo = repo
-    app.state.guard = GuardEngine(repo.pii, repo.nsfw, repo.relevant, repo.version)
+    app.state.guard = GuardEngine(
+        repo.pii, repo.nsfw, repo.relevant, repo.version, repo.settings
+    )
     app.state.store = InMemoryMappingStore()
     app.state.rate_limiter = InMemoryRateLimiter()
     app.state.api_keys = load_api_keys(repo.api_keys)
     app.state.runlog = SyncRunLogger(repo.runlog)
+    return app, repo
+
+
+def make_client():
+    """(client, repo) без with-контекста. В новых тестах предпочитай фикстуры
+    `client`/`repo` из conftest — они дают teardown и очистку dependency_overrides."""
+    app, repo = build_app()
     return TestClient(app), repo
