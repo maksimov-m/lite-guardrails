@@ -6,7 +6,7 @@ from sqlalchemy import select, text
 
 from backend.adapters.db.models import (
     ApiKey,
-    NsfwDictionary,
+    NSFWDictionary,
     PiiRule,
     RelevantCategory,
     Setting,
@@ -14,12 +14,14 @@ from backend.adapters.db.models import (
 from backend.adapters.db.repositories import (
     SqlCrudRepository,
     SqlRunLogRepository,
+    SqlSettingsStore,
     SqlVersionStore,
 )
 from backend.adapters.db.session import SessionLocal, engine
 from backend.adapters.migrations import run_migrations
 from backend.domain.detectors import NsfwDetector, RelevantDetector
 from backend.domain.detectors.pii.patterns import DEFAULT_PATTERNS
+from backend.runtime_settings import RELEVANT_GIBBERISH_ENABLED
 
 log = logging.getLogger("db")
 
@@ -38,7 +40,7 @@ class SqlDatabase:
         self.pii = SqlCrudRepository(
             PiiRule, updatable=("type", "regex", "enabled"), order_by=(PiiRule.type, PiiRule.id)
         )
-        self.nsfw = SqlCrudRepository(NsfwDictionary, updatable=("name", "text", "enabled"))
+        self.nsfw = SqlCrudRepository(NSFWDictionary, updatable=("name", "text", "enabled"))
         self.relevant = SqlCrudRepository(
             RelevantCategory,
             updatable=("type", "text", "enabled"),
@@ -50,6 +52,7 @@ class SqlDatabase:
             order_by=(ApiKey.id,),
         )
         self.version = SqlVersionStore()
+        self.settings = SqlSettingsStore()
         self.runlog = SqlRunLogRepository()
 
     def ping(self) -> bool:
@@ -79,16 +82,20 @@ class SqlDatabase:
                 for pattern in DEFAULT_PATTERNS:
                     s.add(PiiRule(type=pattern.name.upper(), regex=pattern.regex, enabled=True))
 
-            if not s.scalar(select(NsfwDictionary).limit(1)):
+            if not s.scalar(select(NSFWDictionary).limit(1)):
                 builtin_words = "\n".join(sorted(NsfwDetector.load_builtin_words()))
-                s.add(NsfwDictionary(name="Маты RU+EN", text=builtin_words, enabled=True))
+                s.add(NSFWDictionary(name="Маты RU+EN", text=builtin_words, enabled=True))
 
             if not s.scalar(select(RelevantCategory).limit(1)):
-                for category, phrases in RelevantDetector.load_chitchat_files().items():
+                for category, phrases in RelevantDetector.load_default_categories().items():
                     s.add(RelevantCategory(type=category, text="\n".join(phrases), enabled=True))
 
             if not s.get(Setting, "rules_version"):
                 s.add(Setting(key="rules_version", value="1"))
+            # Дефолты рантайм-настроек детекторов (флаг проверяем отдельно от
+            # empty-check таблиц, чтобы досеять и на уже наполненной базе).
+            if not s.get(Setting, RELEVANT_GIBBERISH_ENABLED):
+                s.add(Setting(key=RELEVANT_GIBBERISH_ENABLED, value="1"))
             s.commit()
 
 

@@ -29,14 +29,14 @@ async def run_log_cleaner(app: FastAPI) -> None:
     while True:
         try:
             cutoff = dt.datetime.utcnow() - window
-            deleted = await asyncio.to_thread(
-                app.state.repo.runlog.delete_run_logs_before, cutoff
-            )
+            deleted = await asyncio.to_thread(app.state.repo.runlog.delete_run_logs_before, cutoff)
             if deleted:
-                log.info("run_logs retention cleanup",
-                         extra={"deleted": deleted, "retention_days": settings.log_retention_days})
+                log.info(
+                    "run_logs retention cleanup",
+                    extra={"deleted": deleted, "retention_days": settings.log_retention_days},
+                )
         except Exception:
-            pass
+            log.warning("run_logs retention cleanup failed", exc_info=True)
         await asyncio.sleep(_LOG_CLEANUP_INTERVAL_SECONDS)
 
 
@@ -49,7 +49,7 @@ async def run_version_poller(app: FastAPI) -> None:
                 app.state.guard.reload()
             app.state.api_keys = load_api_keys(app.state.repo.api_keys)
         except Exception:
-            pass
+            log.warning("config hot-reload failed", exc_info=True)
 
 
 def start_background_tasks(app: FastAPI) -> list[asyncio.Task]:

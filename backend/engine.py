@@ -3,7 +3,9 @@ from collections import defaultdict
 from backend.domain.detectors import NsfwDetector, PiiDetector, RelevantDetector
 from backend.domain.detectors.nsfw.utils import normalize_words
 from backend.ports.crud_repository import CrudRepository
+from backend.ports.settings_store import SettingsStore
 from backend.ports.version_store import VersionStore
+from backend.runtime_settings import RELEVANT_GIBBERISH_ENABLED, get_bool
 
 
 class GuardEngine:
@@ -20,11 +22,13 @@ class GuardEngine:
         nsfw_repo: CrudRepository,
         relevant_repo: CrudRepository,
         version_store: VersionStore,
+        settings_store: SettingsStore | None = None,
     ):
         self._pii_repo = pii_repo
         self._nsfw_repo = nsfw_repo
         self._relevant_repo = relevant_repo
         self._version_store = version_store
+        self._settings_store = settings_store
         self._version = -1
         self._pii = self._nsfw = self._relevant = None
         self.detectors = None
@@ -33,7 +37,9 @@ class GuardEngine:
     def reload(self) -> int:
         self._pii = self._build_pii(self._pii_repo.list())
         self._nsfw = self._build_nsfw(self._nsfw_repo.list())
-        self._relevant = self._build_relevant(self._relevant_repo.list())
+        self._relevant = self._build_relevant(
+            self._relevant_repo.list(), self._relevant_gibberish_enabled()
+        )
         self._version = self._version_store.get_version()
         self.detectors = {
             "pii": self._pii,
@@ -62,15 +68,23 @@ class GuardEngine:
                 banned |= normalize_words(dictionary.text.split())
         return NsfwDetector(banned)
 
+    def _relevant_gibberish_enabled(self) -> bool:
+        # Нет settings-store (напр. в узких юнит-тестах) — дефолт: этап включён.
+        if self._settings_store is None:
+            return True
+        return get_bool(self._settings_store, RELEVANT_GIBBERISH_ENABLED)
+
     @staticmethod
-    def _build_relevant(relevant_cats) -> RelevantDetector:
+    def _build_relevant(relevant_cats, gibberish_enabled: bool = True) -> RelevantDetector:
         phrases_by_category = {}
         for category in relevant_cats:
             if category.enabled and category.type:
                 phrases = [line for line in category.text.splitlines() if line.strip()]
                 if phrases:
                     phrases_by_category[category.type] = phrases
-        return RelevantDetector(phrases_by_category=phrases_by_category)
+        return RelevantDetector(
+            phrases_by_category=phrases_by_category, gibberish_enabled=gibberish_enabled
+        )
 
     @property
     def version(self) -> int:

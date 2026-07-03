@@ -56,6 +56,7 @@ class RunLogger:
         output: str,
         duration_ms: float,
         meta: dict | None = None,
+        detected: bool = False,
     ):
         """Неблокирующая постановка записи в очередь. При переполнении —
         дропаем (логирование не должно ронять/тормозить детекцию)."""
@@ -67,6 +68,7 @@ class RunLogger:
             "input_text": input_text,
             "output": output,
             "duration_ms": duration_ms,
+            "detected": detected,
             "meta": meta or None,
         }
         try:

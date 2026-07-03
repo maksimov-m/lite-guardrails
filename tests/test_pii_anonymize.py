@@ -45,11 +45,15 @@ def test_anonymize_text_without_pii_has_no_id(request_ctx):
 
 
 def test_anonymize_batch_masks_and_assigns_ids(request_ctx):
-    results = anonymize_batch(request_ctx, [
-        "почта ivan@mail.ru",
-        "карта 4012 8888 8888 1881",
-        "без пии",
-    ], deanonymize=True)
+    results = anonymize_batch(
+        request_ctx,
+        [
+            "почта ivan@mail.ru",
+            "карта 4012 8888 8888 1881",
+            "без пии",
+        ],
+        deanonymize=True,
+    )
 
     assert len(results) == 3
     assert "ivan@mail.ru" not in results[0]["text"] and results[0]["id"]

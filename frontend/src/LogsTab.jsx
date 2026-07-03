@@ -77,7 +77,9 @@ export default function LogsTab({ onError }) {
             <LogRow key={l.id} log={l} expanded={open.has(l.id)}
                     onToggle={() => toggle(l.id)} onPick={pick} />
           ))}
-          {logs.length === 0 && <tr><td colSpan={6} className="muted">логов нет</td></tr>}
+          {logs.length === 0 && (
+            <tr><td colSpan={6} className="muted">Запусков за выбранный фильтр нет. Смягчите фильтр или запустите проверку во вкладке «Демо».</td></tr>
+          )}
         </tbody>
       </table>
 

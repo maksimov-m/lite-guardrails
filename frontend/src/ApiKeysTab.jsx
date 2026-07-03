@@ -75,7 +75,7 @@ export default function ApiKeysTab({ onError }) {
       </div>
 
       {fresh && (
-        <div className="card" style={{ borderColor: "var(--accent, #2d7)" }}>
+        <div className="card" style={{ borderColor: "var(--accent)" }}>
           <div className="muted">
             Ключ «{fresh.name}» создан. Скопируйте его сейчас — позже он не показывается.
           </div>
@@ -103,7 +103,9 @@ export default function ApiKeysTab({ onError }) {
           </div>
         </div>
       ))}
-      {keys.length === 0 && <p className="muted">ключей нет</p>}
+      {keys.length === 0 && (
+        <p className="muted">Ключей пока нет. Введите имя выше и выдайте первый ключ.</p>
+      )}
     </div>
   );
 }

@@ -80,7 +80,9 @@ def evaluate(run, rows, desc="eval"):
     lat.sort()
     return {
         "overall": metrics(pairs_all),
-        "by_language": {k: metrics(v) for k, v in sorted(by_lang.items(), key=lambda kv: str(kv[0]))},
+        "by_language": {
+            k: metrics(v) for k, v in sorted(by_lang.items(), key=lambda kv: str(kv[0]))
+        },
         "by_type": {k: metrics(v) for k, v in sorted(by_type.items(), key=lambda kv: str(kv[0]))},
         "latency_ms": {
             "avg": round(statistics.mean(lat), 2),
@@ -100,11 +102,9 @@ def main():
         run = factory()
         run(rows[0]["text"])  # прогрев
         results[name] = evaluate(run, rows, desc=f"NSFW/{name}")
-        print(json.dumps(results[name]["overall"], ensure_ascii=False),
-              results[name]["latency_ms"])
+        print(json.dumps(results[name]["overall"], ensure_ascii=False), results[name]["latency_ms"])
     with open(os.path.join(DATA, "nsfw_results.json"), "w", encoding="utf-8") as f:
-        json.dump({"sample_size": len(rows), "systems": results}, f,
-                  ensure_ascii=False, indent=2)
+        json.dump({"sample_size": len(rows), "systems": results}, f, ensure_ascii=False, indent=2)
     print("saved -> nsfw_results.json")
 
 

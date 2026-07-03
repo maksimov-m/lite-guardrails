@@ -44,7 +44,9 @@ def test_single_latency(key, n=500):
     lat.sort()
     print("\n[A] Одиночный /detect/pii (последовательно, 1 соединение):")
     print(f"    n={n}  RPS={n / (sum(lat) / 1000):,.0f}")
-    print(f"    p50={lat[n // 2]:.1f}ms  p95={lat[int(n * 0.95)]:.1f}ms  p99={lat[int(n * 0.99)]:.1f}ms")
+    print(
+        f"    p50={lat[n // 2]:.1f}ms  p95={lat[int(n * 0.95)]:.1f}ms  p99={lat[int(n * 0.99)]:.1f}ms"
+    )
 
 
 def test_batch(key, batch_size=500, requests_n=40):
@@ -54,12 +56,16 @@ def test_batch(key, batch_size=500, requests_n=40):
     requests.post(f"{BASE}/v1/detect/pii/batch", headers=h, json={"texts": texts}, timeout=30)
     start = time.perf_counter()
     for _ in range(requests_n):
-        r = requests.post(f"{BASE}/v1/detect/pii/batch", headers=h, json={"texts": texts}, timeout=30)
+        r = requests.post(
+            f"{BASE}/v1/detect/pii/batch", headers=h, json={"texts": texts}, timeout=30
+        )
         r.raise_for_status()
     elapsed = time.perf_counter() - start
     total = batch_size * requests_n
     print(f"\n[B] Батч /detect/pii/batch ({batch_size} текстов/запрос, {requests_n} запросов):")
-    print(f"    {total:,} детекций за {elapsed:.2f}s = {total / elapsed:,.0f} детекций/с (1 соединение)")
+    print(
+        f"    {total:,} детекций за {elapsed:.2f}s = {total / elapsed:,.0f} детекций/с (1 соединение)"
+    )
 
 
 def _worker(args):
@@ -79,7 +85,9 @@ def test_concurrent(key, procs=12, duration=8):
     with mp.Pool(procs) as pool:
         counts = pool.map(_worker, [(key, duration)] * procs)
     total = sum(counts)
-    print(f"    {total:,} запросов за ~{duration}s = {total / duration:,.0f} req/s (пик как есть, env-capped)")
+    print(
+        f"    {total:,} запросов за ~{duration}s = {total / duration:,.0f} req/s (пик как есть, env-capped)"
+    )
 
 
 def main():

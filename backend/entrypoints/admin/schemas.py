@@ -38,6 +38,11 @@ class RelevantPatch(BaseModel):
     enabled: bool | None = None
 
 
+class RelevantSettingsIn(BaseModel):
+    # Настройки модуля relevant (не привязаны к строке-категории).
+    gibberish_enabled: bool | None = None
+
+
 # --- API-ключи -------------------------------------------------------------
 class ApiKeyIn(BaseModel):
     name: str

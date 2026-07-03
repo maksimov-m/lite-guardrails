@@ -1,4 +1,17 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/feather-light.svg">
+  <img src="docs/assets/feather-dark.svg" alt="" width="84" height="84">
+</picture>
+
 # lite-guardrails
+
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)
+![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)
+![Self-hosted](https://img.shields.io/badge/deploy-self--hosted-0aa.svg)
+![No telemetry](https://img.shields.io/badge/telemetry-none-lightgrey.svg)
+<!-- CI-бейдж: раскомментируйте и подставьте OWNER/REPO после пуша на GitHub:
+![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg) -->
 
 Самостоятельный сервис-«привратник» для текста на русском: детекция **PII**,
 **NSFW** и **релевантности** (смолток/оффтоп) + **анонимизация/деанонимизация** PII.
@@ -9,6 +22,19 @@
 Назначение — дешёвый **первый фильтр** перед LLM/бизнес-логикой: срезать очевидное
 (карты, телефоны, СНИЛС, маты, оффтоп) за микросекунды. По скорости на 2–5 порядков
 быстрее Presidio/LLM Guard; подробнее — [docs/comparison.md](docs/comparison.md).
+
+![Админка lite-guardrails: дашборд со сводкой по PII / NSFW / релевантности, латентностью (avg/p95) и топом потребителей](docs/assets/screenshot.png)
+
+## Что детектит
+
+| Модуль | Ловит | Как |
+|---|---|---|
+| **PII** | email, телефон, банковская карта, ИНН, СНИЛС, паспорт РФ, IP, URL | regex + контрольные суммы (Luhn / ИНН / СНИЛС) и структурная валидация; плюс обратимая **анонимизация** |
+| **NSFW** | мат и обсценная лексика RU + EN | словарь + Aho-Corasick, редактируется в админке |
+| **Релевантность** | смолток и оффтоп (приветствия, благодарности, прощания и т.п.) | покрытие по фразам-категориям, свои категории через админку |
+
+Пользовательские правила и словари добавляются на лету через админку — рестарт не
+нужен. Подробно по каждому модулю — [docs/modules.md](docs/modules.md).
 
 ## Из чего состоит
 
@@ -78,4 +104,56 @@ with GuardrailsClient("http://localhost:8000", api_key="gk_...") as guard:
 Подробнее (батч, обработка `RateLimitError.retry_after`, все методы) —
 [sdk/python/README.md](sdk/python/README.md).
 
+### JavaScript-клиент (SDK)
+
+Изоморфный клиент [`sdk/js`](sdk/js) на нативном `fetch` (Node 18+ / браузер),
+без зависимостей. Тот же контракт и типы ошибок, что в Python.
+
+```bash
+npm install ./sdk/js
+```
+
+```js
+import { GuardrailsClient, RateLimitError } from "lite-guardrails-client";
+
+const guard = new GuardrailsClient("http://localhost:8000", "gk_...");
+const out = await guard.detectPii("мой телефон +79161234567");
+// deanonymize=true — сохранить mapping в Redis для последующего восстановления
+const masked = await guard.anonymize("почта ivan@example.com", true);
+const original = await guard.deanonymize(masked.id, masked.text);
+```
+
+Подробнее — [sdk/js/README.md](sdk/js/README.md).
+
 Полный список ручек и переменных `.env` — в [docs/architecture.md](docs/architecture.md).
+
+## Приватность
+
+Полностью self-hosted: сервис **не отправляет наружу ничего** — ни телеметрии, ни
+аналитики. Данные не покидают ваш контур. В аудит-логи по умолчанию пишется
+**анонимизированный** текст (сырой ввод — только при явном `LOG_RAW_INPUT=true`).
+
+## Разработка
+
+```bash
+python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+pip install pytest ruff
+
+pytest            # тесты (гермётичны: без Postgres/Redis, на in-memory портах)
+pytest -m integration   # интеграционные на реальном Postgres (нужен docker)
+ruff check .      # линт
+```
+
+Фронтенд — в [`frontend/`](frontend) (`npm install && npm run dev`). Правки правил и
+словарей применяются на живом сервисе через админку без рестарта.
+
+## Безопасность
+
+Инструмент трогает PII — при развёртывании смените дефолтные `ADMIN_TOKEN` и пароли
+БД, админку и `/metrics` держите за ingress/VPN. Ответственное раскрытие уязвимостей
+и чек-лист прода — в [SECURITY.md](SECURITY.md).
+
+## Лицензия
+
+[MIT](LICENSE) © 2026 maksim maksimov

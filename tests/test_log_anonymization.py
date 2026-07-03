@@ -36,7 +36,7 @@ def test_non_pii_module_logs_raw():
     text = f"позвони на {PHONE}"
     result = {"NSFW_DETECT": False, "data": []}
     log_text, log_output = build_log_payload("nsfw", text, result)
-    assert log_text == text          # для не-pii модулей текст не трогаем
+    assert log_text == text  # для не-pii модулей текст не трогаем
     assert log_output == result
 
 
@@ -48,5 +48,5 @@ def test_log_raw_input_toggle(monkeypatch):
     text = f"телефон {PHONE}"
     result = det.detect(text)
     log_text, log_output = build_log_payload("pii", text, result)
-    assert log_text == text          # raw-режим: не анонимизируем даже pii
+    assert log_text == text  # raw-режим: не анонимизируем даже pii
     assert log_output == result

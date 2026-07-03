@@ -48,8 +48,10 @@ def _runner(det):
         out = det.detect(text)
         return [
             (d["start"], d["end"], OURS_TO_CANON[d["class"]])
-            for d in out["data"] if d["class"] in OURS_TO_CANON
+            for d in out["data"]
+            if d["class"] in OURS_TO_CANON
         ]
+
     return run
 
 
@@ -57,25 +59,44 @@ def _print(title, res):
     print(f"\n=== {title} ===")
     print("micro:", json.dumps(res["micro"], ensure_ascii=False), "| lat:", res["latency_ms"])
     for t, v in res["per_type"].items():
-        print(f"  {t:<10} P={v['precision']:.2f} R={v['recall']:.2f} F1={v['f1']:.2f} (n={v['support']})")
+        print(
+            f"  {t:<10} P={v['precision']:.2f} R={v['recall']:.2f} F1={v['f1']:.2f} (n={v['support']})"
+        )
 
 
 def main():
     ds = datasets.load_dataset("hivetrace/pii-bench")
     rows = [(r["text"], r["entities"]) for split in ds.values() for r in split]
 
-    baseline = _detector([
-        EmailPattern(), UrlPattern(), PhonePattern(), BankCardPattern(),
-        SnilsPattern(), InnPattern(), PassportRfPattern(), IpPattern(),
-    ])
-    improved = _detector([
-        EmailPattern(), UrlPattern(), PhonePattern(), BankCardNoLuhn(),
-        SnilsBroad(), InnPattern(), PassportRfPattern(), IpPattern(),
-    ])
+    baseline = _detector(
+        [
+            EmailPattern(),
+            UrlPattern(),
+            PhonePattern(),
+            BankCardPattern(),
+            SnilsPattern(),
+            InnPattern(),
+            PassportRfPattern(),
+            IpPattern(),
+        ]
+    )
+    improved = _detector(
+        [
+            EmailPattern(),
+            UrlPattern(),
+            PhonePattern(),
+            BankCardNoLuhn(),
+            SnilsBroad(),
+            InnPattern(),
+            PassportRfPattern(),
+            IpPattern(),
+        ]
+    )
 
     rb = _runner(baseline)
     ri = _runner(improved)
-    rb(rows[0][0]); ri(rows[0][0])  # прогрев
+    rb(rows[0][0])
+    ri(rows[0][0])  # прогрев
 
     _print("BASELINE", score(rows, rb, supported_only=True))
     _print("IMPROVED (snils broad + bank_card no-Luhn)", score(rows, ri, supported_only=True))

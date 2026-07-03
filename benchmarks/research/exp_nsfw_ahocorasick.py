@@ -34,8 +34,10 @@ def evaluate(run, rows):
         lat.append((time.perf_counter() - t0) * 1000)
         pairs.append((bool(r["label"]), p))
     lat.sort()
-    return metrics(pairs), {"avg": round(statistics.mean(lat), 4),
-                            "p95": round(lat[int(len(lat) * 0.95)], 4)}
+    return metrics(pairs), {
+        "avg": round(statistics.mean(lat), 4),
+        "p95": round(lat[int(len(lat) * 0.95)], 4),
+    }
 
 
 def main():
@@ -65,7 +67,9 @@ def main():
                 return True
         return False
 
-    base.detect(rows[0]["text"]); ac_substring(rows[0]["text"]); ac_wordbound(rows[0]["text"])
+    base.detect(rows[0]["text"])
+    ac_substring(rows[0]["text"])
+    ac_wordbound(rows[0]["text"])
 
     m0, l0 = evaluate(lambda t: bool(base.detect(t)["NSFW_DETECT"]), rows)
     m1, l1 = evaluate(ac_substring, rows)

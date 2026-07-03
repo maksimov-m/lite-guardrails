@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import * as api from "./api.js";
+import FeatherIcon from "./FeatherIcon.jsx";
 
 export default function Login({ onLogin }) {
   const cfg = api.getConfig();
@@ -29,7 +30,7 @@ export default function Login({ onLogin }) {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={submit}>
-        <h1>🛡️ lite-guardrails</h1>
+        <h1><FeatherIcon size="0.95em" style={{ marginRight: "0.35em", verticalAlign: "-0.12em" }} />lite-guardrails</h1>
         <p className="muted" style={{ margin: 0 }}>Админка. Введите пароль.</p>
 
         <label>Пароль</label>

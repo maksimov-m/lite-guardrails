@@ -57,9 +57,9 @@ def configure_logging(level: str, json_output: bool) -> None:
     if json_output:
         handler.setFormatter(_JsonFormatter())
     else:
-        handler.setFormatter(logging.Formatter(
-            "%(asctime)s %(levelname)s %(name)s [%(request_id)s] %(message)s"
-        ))
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)s %(name)s [%(request_id)s] %(message)s")
+        )
     root = logging.getLogger()
     root.handlers[:] = [handler]
     root.setLevel(level.upper())
@@ -71,6 +71,7 @@ def install_request_logging(app) -> None:
     @app.middleware("http")
     async def _request_context(request: Request, call_next):
         rid = request.headers.get("X-Request-ID") or uuid.uuid4().hex
+        request.state.request_id = rid  # чтобы 500-обработчик достал rid после reset contextvar
         token = request_id_var.set(rid)
         start = time.perf_counter()
         try:
@@ -78,13 +79,16 @@ def install_request_logging(app) -> None:
             response.headers["X-Request-ID"] = rid
             if request.url.path not in _SILENT_PATHS:
                 info = getattr(request.state, "api_key", None)
-                access_log.info("request", extra={
-                    "method": request.method,
-                    "path": request.url.path,
-                    "status": response.status_code,
-                    "duration_ms": round((time.perf_counter() - start) * 1000, 2),
-                    "api_key": info.get("name") if info else None,
-                })
+                access_log.info(
+                    "request",
+                    extra={
+                        "method": request.method,
+                        "path": request.url.path,
+                        "status": response.status_code,
+                        "duration_ms": round((time.perf_counter() - start) * 1000, 2),
+                        "api_key": info.get("name") if info else None,
+                    },
+                )
             return response
         finally:
             request_id_var.reset(token)

@@ -7,6 +7,15 @@ from fastapi import HTTPException, Request
 from backend.entrypoints.detectors.log_utils import build_log_payload, meta_with_key
 
 
+def _is_detection(module: str, result: dict) -> bool:
+    """Сработал ли гуард. Для relevant это RELEVANT=false (пойман чит-чат/атака),
+    для остальных — <MODULE>_DETECT=true. Совпадает с SQL-логикой в run_log_stats;
+    считаем здесь (результат уже на руках), чтобы не парсить output в БД."""
+    if module == "relevant":
+        return result.get("RELEVANT") is False
+    return result.get(f"{module.upper()}_DETECT") is True
+
+
 def run_detect(request: Request, module: str, text: str, metadata: dict | None = None) -> dict:
     guard = request.app.state.guard
     started = time.perf_counter()
@@ -20,6 +29,7 @@ def run_detect(request: Request, module: str, text: str, metadata: dict | None =
         output=json.dumps(log_output, ensure_ascii=False),
         duration_ms=duration_ms,
         meta=meta_with_key(request, metadata),
+        detected=_is_detection(module, result),
     )
     return result
 
@@ -74,8 +84,10 @@ def deanonymize_batch(request: Request, items: list) -> list[dict]:
     results = []
     for item in items:
         restored = deanonymize_text(request, item.id, item.text)
-        results.append({
-            "text": item.text if restored is None else restored,
-            "restored": restored is not None,
-        })
+        results.append(
+            {
+                "text": item.text if restored is None else restored,
+                "restored": restored is not None,
+            }
+        )
     return results

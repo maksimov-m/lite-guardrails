@@ -25,8 +25,10 @@ def load(name):
 
 def bar(value, vmax=1.0, kind="ok"):
     pct = round(100 * value / vmax) if vmax else 0
-    return (f'<div class="bar"><div class="fill {kind}" style="width:{pct}%"></div>'
-            f'<span>{value:.3f}</span></div>')
+    return (
+        f'<div class="bar"><div class="fill {kind}" style="width:{pct}%"></div>'
+        f"<span>{value:.3f}</span></div>"
+    )
 
 
 def best(values):
@@ -44,21 +46,19 @@ def pii_section(pii):
         vals = [pii["systems"][s]["micro"][key] for s in systems]
         bi = best(vals)
         cells = "".join(
-            f'<td class="{"win" if i == bi else ""}">{bar(v, 1.0)}</td>'
-            for i, v in enumerate(vals)
+            f'<td class="{"win" if i == bi else ""}">{bar(v, 1.0)}</td>' for i, v in enumerate(vals)
         )
         rows += f"<tr><th>{title} (micro)</th>{cells}</tr>"
     # латентность (меньше = лучше)
     lat = [pii["systems"][s]["latency_ms"]["avg"] for s in systems]
     bi = min(range(len(lat)), key=lambda i: lat[i])
     cells = "".join(
-        f'<td class="{"win" if i == bi else ""}">{v:.2f} мс</td>'
-        for i, v in enumerate(lat)
+        f'<td class="{"win" if i == bi else ""}">{v:.2f} мс</td>' for i, v in enumerate(lat)
     )
     rows += f"<tr><th>Латентность (avg)</th>{cells}</tr>"
     p95 = [pii["systems"][s]["latency_ms"]["p95"] for s in systems]
     cells = "".join(f"<td>{v:.2f} мс</td>" for v in p95)
-    rows += f'<tr><th>Латентность (p95)</th>{cells}</tr>'
+    rows += f"<tr><th>Латентность (p95)</th>{cells}</tr>"
 
     # по семействам — F1
     fams = ["contacts", "documents", "person", "location"]
@@ -68,14 +68,13 @@ def pii_section(pii):
         sup = pii["systems"][systems[0]]["families"][fam]["support"]
         bi = best(vals)
         cells = "".join(
-            f'<td class="{"win" if i == bi else ""}">{bar(v, 1.0)}</td>'
-            for i, v in enumerate(vals)
+            f'<td class="{"win" if i == bi else ""}">{bar(v, 1.0)}</td>' for i, v in enumerate(vals)
         )
         fam_rows += f"<tr><th>{fam} <span class=mut>· n={sup}</span></th>{cells}</tr>"
 
     return f"""
     <h2>PII-детекция</h2>
-    <p class="mut">Датасет <code>redmadrobot-rnd/pii_benchmark</code> (RU), сэмпл {pii['sample_size']} строк.
+    <p class="mut">Датасет <code>redmadrobot-rnd/pii_benchmark</code> (RU), сэмпл {pii["sample_size"]} строк.
     Метрика — span-level micro P/R/F1 с partial-match по семействам сущностей.</p>
     <table><thead><tr><th>Метрика</th>{head}</tr></thead><tbody>{rows}</tbody></table>
     <h3>F1 по семействам сущностей</h3>
@@ -87,20 +86,22 @@ def nsfw_section(nsfw):
     systems = list(nsfw["systems"])
     head = "".join(f"<th>{SYS_LABEL[s]}</th>" for s in systems)
     rows = ""
-    for key, title in [("accuracy", "Accuracy"), ("precision", "Precision"),
-                       ("recall", "Recall"), ("f1", "F1")]:
+    for key, title in [
+        ("accuracy", "Accuracy"),
+        ("precision", "Precision"),
+        ("recall", "Recall"),
+        ("f1", "F1"),
+    ]:
         vals = [nsfw["systems"][s]["overall"][key] for s in systems]
         bi = best(vals)
         cells = "".join(
-            f'<td class="{"win" if i == bi else ""}">{bar(v, 1.0)}</td>'
-            for i, v in enumerate(vals)
+            f'<td class="{"win" if i == bi else ""}">{bar(v, 1.0)}</td>' for i, v in enumerate(vals)
         )
         rows += f"<tr><th>{title}</th>{cells}</tr>"
     lat = [nsfw["systems"][s]["latency_ms"]["avg"] for s in systems]
     bi = min(range(len(lat)), key=lambda i: lat[i])
     cells = "".join(
-        f'<td class="{"win" if i == bi else ""}">{v:.2f} мс</td>'
-        for i, v in enumerate(lat)
+        f'<td class="{"win" if i == bi else ""}">{v:.2f} мс</td>' for i, v in enumerate(lat)
     )
     rows += f"<tr><th>Латентность (avg)</th>{cells}</tr>"
 
@@ -111,14 +112,13 @@ def nsfw_section(nsfw):
         vals = [nsfw["systems"][s]["by_language"][lang]["f1"] for s in systems]
         bi = best(vals)
         cells = "".join(
-            f'<td class="{"win" if i == bi else ""}">{bar(v, 1.0)}</td>'
-            for i, v in enumerate(vals)
+            f'<td class="{"win" if i == bi else ""}">{bar(v, 1.0)}</td>' for i, v in enumerate(vals)
         )
         lang_rows += f"<tr><th>{lang.upper()}</th>{cells}</tr>"
 
     return f"""
     <h2>NSFW / toxicity-детекция</h2>
-    <p class="mut">Датасет <code>redmadrobot-rnd/nsfw_benchmark</code> (RU+EN), сэмпл {nsfw['sample_size']} строк.
+    <p class="mut">Датасет <code>redmadrobot-rnd/nsfw_benchmark</code> (RU+EN), сэмпл {nsfw["sample_size"]} строк.
     Бинарная классификация (unsafe = 1). lite использует словарь, LLM Guard — ML-модель (roberta).</p>
     <table><thead><tr><th>Метрика</th>{head}</tr></thead><tbody>{rows}</tbody></table>
     <h3>F1 по языкам</h3>
@@ -153,8 +153,8 @@ def conclusions(pii, nsfw):
         f"«проседают» по recall (0.10 и 0.08): семантические категории (экстремизм, "
         f"политика, self-harm) и hard-negative-примеры плохо ловятся и списком слов, и "
         f"англоязычной toxicity-моделью на русском тексте."
-        if lite_wins_nsfw else
-        f"ML-модель полнее по recall (<b>{lg_nsfw['recall']:.2f}</b> против "
+        if lite_wins_nsfw
+        else f"ML-модель полнее по recall (<b>{lg_nsfw['recall']:.2f}</b> против "
         f"<b>{lite_nsfw['recall']:.2f}</b>), но ценой латентности."
     )
 
@@ -177,8 +177,8 @@ def conclusions(pii, nsfw):
       </div>
       <div class="card">
         <h4>NSFW: словарь vs модель</h4>
-        <p>Словарь даёт высокую precision (<b>{lite_nsfw['precision']:.2f}</b>) при низком recall
-        (<b>{lite_nsfw['recall']:.2f}</b>). {nsfw_verdict}</p>
+        <p>Словарь даёт высокую precision (<b>{lite_nsfw["precision"]:.2f}</b>) при низком recall
+        (<b>{lite_nsfw["recall"]:.2f}</b>). {nsfw_verdict}</p>
       </div>
       <div class="card">
         <h4>Ниша lite-guardrails</h4>

@@ -5,27 +5,15 @@
 применяется к ключам без своего лимита, и fail-open при недоступном лимитере.
 """
 
-from inmemory import make_client
-
 from backend.config import settings
-
-ADMIN = {"X-Admin-Token": "admin"}
-
-
-def _issue(client, **body):
-    r = client.post("/admin/api-keys", json={"name": "bot", **body}, headers=ADMIN)
-    assert r.status_code == 200, r.text
-    return r.json()["key"]
 
 
 def _hit(client, key):
-    return client.post("/v1/detect/nsfw", json={"text": "привет"},
-                       headers={"X-API-Key": key})
+    return client.post("/v1/detect/nsfw", json={"text": "привет"}, headers={"X-API-Key": key})
 
 
-def test_per_key_limit_blocks_after_quota():
-    client, _ = make_client()
-    key = _issue(client, rate_limit_per_min=2)
+def test_per_key_limit_blocks_after_quota(client, issue_key):
+    key = issue_key(rate_limit_per_min=2)
 
     r1 = _hit(client, key)
     r2 = _hit(client, key)
@@ -39,27 +27,27 @@ def test_per_key_limit_blocks_after_quota():
     assert int(r3.headers["Retry-After"]) > 0
 
 
-def test_zero_limit_means_unlimited(monkeypatch):
+def test_zero_limit_means_unlimited(client, issue_key, monkeypatch):
     # дефолт низкий: если бы 0 трактовался как "не задан", ключ упёрся бы в дефолт
     monkeypatch.setattr(settings, "rate_limit_default_per_min", 3)
-    client, _ = make_client()
-    key = _issue(client, rate_limit_per_min=0)
+    key = issue_key(rate_limit_per_min=0)
+
     for _ in range(10):
         assert _hit(client, key).status_code == 200
 
 
-def test_global_default_applies_without_per_key(monkeypatch):
+def test_global_default_applies_without_per_key(client, issue_key, monkeypatch):
     monkeypatch.setattr(settings, "rate_limit_default_per_min", 1)
-    client, _ = make_client()
-    key = _issue(client)  # без своего лимита -> дефолт
+    key = issue_key()  # без своего лимита -> дефолт
+
     assert _hit(client, key).status_code == 200
     assert _hit(client, key).status_code == 429
 
 
-def test_fail_open_when_limiter_unavailable(monkeypatch):
+def test_fail_open_when_limiter_unavailable(client, issue_key, monkeypatch):
     monkeypatch.setattr(settings, "rate_limit_default_per_min", 1)
-    client, _ = make_client()
     client.app.state.rate_limiter = None  # Redis «недоступен»
-    key = _issue(client)
+    key = issue_key()
+
     for _ in range(5):
         assert _hit(client, key).status_code == 200

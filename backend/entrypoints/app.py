@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -7,6 +8,7 @@ from backend.adapters.db import SqlDatabase
 from backend.adapters.rate_limit import RedisRateLimiter
 from backend.adapters.store import RedisMappingStore
 from backend.config import settings
+from backend.domain.detectors.errors import DetectorTimeout
 from backend.engine import GuardEngine
 from backend.entrypoints.admin import router as admin_router
 from backend.entrypoints.background import start_background_tasks
@@ -16,6 +18,7 @@ from backend.entrypoints.detectors.pii import router as pii_router
 from backend.entrypoints.detectors.relevant import router as relevant_router
 from backend.entrypoints.health import router as health_router
 from backend.entrypoints.metrics import router as metrics_router
+from backend.entrypoints.utils import _detector_timeout_handler, _unhandled_exception_handler
 from backend.logging_config import configure_logging, install_request_logging
 from backend.runlog import RunLogger
 
@@ -24,6 +27,8 @@ from backend.runlog import RunLogger
 # трогая живущих клиентов. Инфраструктура (admin, metrics, пробы) — вне версии.
 API_V1 = "/v1"
 
+log = logging.getLogger("app")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -31,10 +36,7 @@ async def lifespan(app: FastAPI):
     db = SqlDatabase()
     db.init()
     app.state.repo = db
-    app.state.guard = GuardEngine(db.pii,
-                                  db.nsfw,
-                                  db.relevant,
-                                  db.version)
+    app.state.guard = GuardEngine(db.pii, db.nsfw, db.relevant, db.version, db.settings)
     app.state.store = RedisMappingStore()
     app.state.rate_limiter = RedisRateLimiter()
     app.state.api_keys = load_api_keys(db.api_keys)
@@ -60,6 +62,8 @@ def create_app(lifespan=None) -> FastAPI:
         allow_headers=settings.cors_allow_headers_list,
     )
     install_request_logging(app)
+    app.add_exception_handler(DetectorTimeout, _detector_timeout_handler)
+    app.add_exception_handler(Exception, _unhandled_exception_handler)
 
     detect_auth = [Depends(require_api_key)]
     app.include_router(pii_router, prefix=API_V1, dependencies=detect_auth)

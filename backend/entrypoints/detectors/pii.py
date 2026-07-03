@@ -20,28 +20,31 @@ from backend.entrypoints.detectors.schemas import (
 router = APIRouter(tags=["pii"])
 
 
+# Хендлеры — обычные def (не async): детекция CPU-bound + redis-py блокирующие.
+# FastAPI уводит sync-хендлеры в threadpool, поэтому они не блокируют event loop
+# (иначе один большой батч заморозил бы весь воркер, включая /live). См. health.py.
 @router.post("/detect/pii")
-async def detect_pii(body: TextIn, request: Request):
+def detect_pii(body: TextIn, request: Request):
     return run_detect(request, "pii", body.text, body.metadata)
 
 
 @router.post("/detect/pii/batch")
-async def detect_pii_batch(body: BatchIn, request: Request):
+def detect_pii_batch(body: BatchIn, request: Request):
     return run_batch(request, "pii", body.texts)
 
 
 @router.post("/anonymize")
-async def anonymize(body: AnonymizeIn, request: Request):
+def anonymize(body: AnonymizeIn, request: Request):
     return anonymize_text(request, body.text, body.deanonymize)
 
 
 @router.post("/anonymize/batch")
-async def anonymize_texts(body: AnonymizeBatchIn, request: Request):
+def anonymize_texts(body: AnonymizeBatchIn, request: Request):
     return {"results": anonymize_batch(request, body.texts, body.deanonymize)}
 
 
 @router.post("/deanonymize")
-async def deanonymize(body: DeanonymizeIn, request: Request):
+def deanonymize(body: DeanonymizeIn, request: Request):
     restored = deanonymize_text(request, body.id, body.text)
     if restored is None:
         raise HTTPException(404, "mapping not found (неизвестный id или истёк TTL)")
@@ -49,5 +52,5 @@ async def deanonymize(body: DeanonymizeIn, request: Request):
 
 
 @router.post("/deanonymize/batch")
-async def deanonymize_texts(body: DeanonymizeBatchIn, request: Request):
+def deanonymize_texts(body: DeanonymizeBatchIn, request: Request):
     return {"results": deanonymize_batch(request, body.items)}

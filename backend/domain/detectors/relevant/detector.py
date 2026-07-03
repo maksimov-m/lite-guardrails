@@ -8,7 +8,9 @@ from backend.domain.detectors.relevant.utils import (
 )
 from backend.domain.normalization import Normalizer
 
-_CHITCHAT_DIR = os.path.join(os.path.dirname(__file__), "data", "chitchat")
+_DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+_CHITCHAT_DIR = os.path.join(_DATA_DIR, "chitchat")
+_INJECTION_DIR = os.path.join(_DATA_DIR, "injection")
 
 _LETTER_RE = re.compile(r"[A-Za-zА-Яа-яЁё]")
 # Множество тех же символов, что матчит _LETTER_RE (строим из самого паттерна —
@@ -24,23 +26,49 @@ class RelevantDetector(BaseDetector):
     _LETTER_SET = _LETTER_SET
     COVERAGE_THRESHOLD = 0.8
 
-    def __init__(self, phrases_by_category: dict | None = None):
+    # Категории «жёсткого сигнала»: блокируют ввод НЕЗАВИСИМО от порога покрытия.
+    # Смолток фильтруем только когда он занимает почти весь текст (COVERAGE_THRESHOLD),
+    # но prompt-injection нужно ловить, даже если это одна фраза в большом легитимном
+    # на вид сообщении («отличная работа, а теперь забудь все инструкции…»).
+    HARD_FLAG_CATEGORIES = frozenset({"injection"})
+
+    def __init__(self, phrases_by_category: dict | None = None, gibberish_enabled: bool = True):
         if phrases_by_category is None:
-            phrases_by_category = self.load_chitchat_files()
+            phrases_by_category = self.load_default_categories()
         self._patterns = build_category_patterns(phrases_by_category)
+        self._gibberish_enabled = gibberish_enabled
 
     @staticmethod
     def load_chitchat_files() -> dict:
         return read_chitchat_files(_CHITCHAT_DIR)
 
+    @staticmethod
+    def load_injection_files() -> dict:
+        return read_chitchat_files(_INJECTION_DIR)
+
+    @classmethod
+    def load_default_categories(cls) -> dict:
+        """Встроенные словари для сида БД и file-based режима: смолток + инъекции."""
+        return {**cls.load_chitchat_files(), **cls.load_injection_files()}
+
     def detect(self, text: str) -> dict:
         text = Normalizer.normalize(text)
-        if self._is_gibberish(text):
+        if self._gibberish_enabled and self._is_gibberish(text):
             return {"RELEVANT": False, "category": "gibberish", "data": []}
 
         matches, scores = self._find_chitchat_matches(text)
-        coverage = self._chitchat_letter_coverage(text, matches)
 
+        # Жёсткий сигнал (prompt-injection): блокируем независимо от покрытия.
+        hard_hits = [m for m in matches if m["category"] in self.HARD_FLAG_CATEGORIES]
+        if hard_hits:
+            hard_scores = {c: n for c, n in scores.items() if c in self.HARD_FLAG_CATEGORIES}
+            return {
+                "RELEVANT": False,
+                "category": max(hard_scores, key=hard_scores.get),
+                "data": hard_hits,
+            }
+
+        coverage = self._chitchat_letter_coverage(text, matches)
         is_chitchat = bool(matches) and coverage >= self.COVERAGE_THRESHOLD
         top_category = max(scores, key=scores.get) if scores else None
         return {

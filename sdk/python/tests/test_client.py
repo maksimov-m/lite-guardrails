@@ -11,8 +11,7 @@ from lite_guardrails_client import AuthError, GuardrailsClient, RateLimitError
 
 
 def _client(handler):
-    return GuardrailsClient("http://guard", "gk_test",
-                            transport=httpx.MockTransport(handler))
+    return GuardrailsClient("http://guard", "gk_test", transport=httpx.MockTransport(handler))
 
 
 def test_detect_pii_sends_key_path_body_and_parses():
@@ -67,9 +66,9 @@ def test_anonymize_deanonymize_flag_in_body():
         return httpx.Response(200, json={"id": "m1", "text": "почта <EMAIL_1>"})
 
     with _client(handler) as c:
-        c.anonymize("почта a@b.com")                     # дефолт
+        c.anonymize("почта a@b.com")  # дефолт
         default_body = json.loads(seen["body"])
-        c.anonymize("почта a@b.com", deanonymize=True)   # явно
+        c.anonymize("почта a@b.com", deanonymize=True)  # явно
         explicit_body = json.loads(seen["body"])
 
     assert default_body["deanonymize"] is False

@@ -47,7 +47,13 @@ def _compute():
 def test_relevant_output_matches_golden():
     with open(GOLDEN, encoding="utf-8") as f:
         golden = json.load(f)
-    assert _compute() == golden, "выход relevant-детектора отличается от эталона"
+    actual = _compute()
+
+    # Поэлементно: при расхождении сразу видно, НА КАКОМ тексте разъехался
+    # выход, а не безликое «списки не равны».
+    assert len(actual) == len(golden), "изменился размер корпуса — пересними эталон"
+    for text, got, want in zip(CORPUS, actual, golden):
+        assert got == want, f"relevant изменился на {text!r}:\n  получили {got}\n  эталон  {want}"
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import PiiRules from "./PiiRules.jsx";
 import DictionaryManager from "./DictionaryManager.jsx";
+import RelevantSettings from "./RelevantSettings.jsx";
 import { nsfwResource, relevantResource } from "./resources.js";
 
 const MODULES = [
@@ -28,6 +29,7 @@ export default function RulesTab({ onError }) {
 
       {module === "pii" && <PiiRules onError={onError} />}
       {module === "nsfw" && <DictionaryManager resource={nsfwResource} onError={onError} />}
+      {module === "relevant" && <RelevantSettings onError={onError} />}
       {module === "relevant" && <DictionaryManager resource={relevantResource} onError={onError} />}
     </div>
   );

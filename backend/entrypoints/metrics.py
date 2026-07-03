@@ -45,9 +45,7 @@ def render_prometheus(snapshot: dict, window_seconds: int) -> str:
     snapshot: {"total": int, "modules": [{"module", "runs", "detections"}]}
     """
     by_module = {m["module"]: m for m in snapshot.get("modules", [])}
-    modules = list(_KNOWN_MODULES) + [
-        m for m in by_module if m not in _KNOWN_MODULES
-    ]
+    modules = list(_KNOWN_MODULES) + [m for m in by_module if m not in _KNOWN_MODULES]
 
     lines: list[str] = []
 

@@ -68,8 +68,7 @@ class GuardrailsClient:
         return self._post("/v1/anonymize", {"text": text, "deanonymize": deanonymize})
 
     def anonymize_batch(self, texts: Iterable[str], deanonymize: bool = False) -> Any:
-        return self._post("/v1/anonymize/batch",
-                          {"texts": list(texts), "deanonymize": deanonymize})
+        return self._post("/v1/anonymize/batch", {"texts": list(texts), "deanonymize": deanonymize})
 
     def deanonymize(self, mapping_id: str, text: str) -> dict:
         return self._post("/v1/deanonymize", {"id": mapping_id, "text": text})

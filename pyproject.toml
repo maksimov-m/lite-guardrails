@@ -25,3 +25,9 @@ select = ["E", "F", "I"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Корень проекта в sys.path, чтобы `import backend` работал в тестах
+# (заменяет прежний корневой conftest.py с ручной правкой sys.path).
+pythonpath = ["."]
+markers = [
+    "integration: тесты против реальной инфраструктуры (Postgres через testcontainers); требуют docker, пропускаются без него",
+]

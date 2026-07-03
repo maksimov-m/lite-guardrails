@@ -16,7 +16,8 @@ def old_detect(banned, text):
     text = text.lower()
     found = [
         {"value": m.group(), "start": m.start(), "end": m.end()}
-        for m in _WORD_PATTERN.finditer(text) if m.group() in banned
+        for m in _WORD_PATTERN.finditer(text)
+        if m.group() in banned
     ]
     return {"NSFW_DETECT": len(found) > 0, "data": found}
 
@@ -28,13 +29,13 @@ CASES = [
     "нормальный текст без ничего",
     "ты сука",
     "СУКА большими буквами",
-    "сука!",                      # '!' — часть токена -> НЕ целый токен -> нет матча
-    "плохо сука и ещё бля тут",   # два матча
-    "class assessment",          # 'ass' внутри слов -> Scunthorpe, нет матча
-    "ass",                       # отдельным словом -> матч
-    "напиши f@ck сюда",          # символы @ в словаре
-    "сукаа",                     # не тот токен -> нет матча
-    "-сука-",                    # дефисы — не wordchar -> матч
+    "сука!",  # '!' — часть токена -> НЕ целый токен -> нет матча
+    "плохо сука и ещё бля тут",  # два матча
+    "class assessment",  # 'ass' внутри слов -> Scunthorpe, нет матча
+    "ass",  # отдельным словом -> матч
+    "напиши f@ck сюда",  # символы @ в словаре
+    "сукаа",  # не тот токен -> нет матча
+    "-сука-",  # дефисы — не wordchar -> матч
 ]
 
 
