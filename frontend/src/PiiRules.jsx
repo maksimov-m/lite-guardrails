@@ -70,7 +70,9 @@ export default function PiiRules({ onError }) {
           ))}
         </div>
       ))}
-      {types.length === 0 && <p className="muted">правил нет</p>}
+      {types.length === 0 && (
+        <p className="muted">Правил пока нет. Задайте тег и regex выше, чтобы добавить первое.</p>
+      )}
 
       {(hasMore || page > 0) && (
         <div className="row" style={{ marginTop: 12, justifyContent: "flex-end" }}>

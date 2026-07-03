@@ -29,7 +29,7 @@ export default function Login({ onLogin }) {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={submit}>
-        <h1>🛡️ lite-guardrails</h1>
+        <h1>lite-guardrails</h1>
         <p className="muted" style={{ margin: 0 }}>Админка. Введите пароль.</p>
 
         <label>Пароль</label>

@@ -48,7 +48,7 @@ export default function App() {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <div className="brand">🛡️ guardrails</div>
+        <div className="brand">guardrails</div>
         {NAV.map((n) => (
           <button
             key={n.key}
@@ -62,9 +62,9 @@ export default function App() {
         <div className="spacer" />
 
         <button className="nav-btn" onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
-          {theme === "light" ? "🌙 Тёмная тема" : "☀️ Светлая тема"}
+          {theme === "light" ? "Тёмная тема" : "Светлая тема"}
         </button>
-        <button className="nav-btn" onClick={logout}>⎋ Выйти</button>
+        <button className="nav-btn" onClick={logout}>Выйти</button>
       </aside>
 
       <main className="main">

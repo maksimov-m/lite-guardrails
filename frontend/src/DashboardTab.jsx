@@ -71,12 +71,14 @@ function ModuleCard({ m }) {
   return (
     <div className="card" style={{ flex: 1, minWidth: 220 }}>
       <div className="group-h">{MODULE_TITLES[m.module] || m.module}</div>
-      <div style={{ fontSize: 28, fontWeight: 700 }}>{m.runs}</div>
-      <div className="muted">запусков</div>
-      <div style={{ marginTop: 8 }}>
-        <b>{m.detections}</b> детекций <span className="muted">({rate}%)</span>
+      <div className="stat">
+        <span className="stat-num">{m.runs}</span>
+        <span className="stat-label">запусков</span>
       </div>
-      <div className="muted" style={{ marginTop: 4 }}>
+      <div style={{ marginTop: 12 }}>
+        {m.detections} детекций <span className="muted">({rate}%)</span>
+      </div>
+      <div className="muted mono" style={{ marginTop: 4, fontSize: 12 }}>
         avg {m.avg_ms} мс · p95 {m.p95_ms} мс
       </div>
     </div>
@@ -98,15 +100,15 @@ function Timeline({ timeline }) {
             <div style={{
               height: `${(t.runs / max) * 100}%`,
               minHeight: 2,
-              background: "var(--border, #ccd)",
-              borderRadius: 3,
+              background: "var(--border)",
+              borderRadius: 2,
               position: "relative",
               overflow: "hidden",
             }}>
               <div style={{
                 position: "absolute", bottom: 0, left: 0, right: 0,
                 height: `${t.runs ? (t.detections / t.runs) * 100 : 0}%`,
-                background: "var(--accent, #e66)",
+                background: "var(--accent)",
               }} />
             </div>
           </div>
@@ -115,7 +117,7 @@ function Timeline({ timeline }) {
       {timeline.length > 0 && (
         <div className="row muted" style={{ justifyContent: "space-between", marginTop: 6 }}>
           <span>{new Date(timeline[0].ts).toLocaleString()}</span>
-          <span>серым — запуски, красным — детекции</span>
+          <span>серым — запуски, синим — детекции</span>
           <span>{new Date(timeline[timeline.length - 1].ts).toLocaleString()}</span>
         </div>
       )}
@@ -135,9 +137,9 @@ function TopList({ title, rows, label, value, noun }) {
             <span>{label(r)}</span>
             <span className="muted">{value(r)} {noun}</span>
           </div>
-          <div style={{ height: 6, background: "var(--border, #eee)", borderRadius: 3 }}>
+          <div style={{ height: 6, background: "var(--border)", borderRadius: 2 }}>
             <div style={{ height: "100%", width: `${(value(r) / max) * 100}%`,
-                          background: "var(--accent, #68c)", borderRadius: 3 }} />
+                          background: "var(--accent)", borderRadius: 2 }} />
           </div>
         </div>
       ))}
