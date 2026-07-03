@@ -1,7 +1,6 @@
 site_name: lite-guardrails
 site_description: Быстрый self-hosted привратник для текста — PII / NSFW / релевантность
-# ВАЖНО: замените на свой GitHub Pages URL (нужно для корректных ссылок/поиска):
-# site_url: https://<username>.github.io/<repo>/
+site_url: https://maksimov-m.github.io/lite-guardrails/
 docs_dir: docs
 
 theme:
@@ -35,14 +34,15 @@ theme:
     - content.code.annotate
     - search.suggest
     - search.highlight
-  icon:
-    logo: material/shield-check
+  logo: assets/feather-logo.svg
+  favicon: assets/favicon.svg
 
 nav:
   - Обзор: index.md
   - Модули: modules.md
   - Развёртывание: deployment.md
   - Python SDK: sdk.md
+  - JavaScript SDK: sdk-js.md
   - Архитектура: architecture.md
   - Сравнение: comparison.md
 

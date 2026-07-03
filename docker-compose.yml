@@ -2,24 +2,36 @@ services:
   guardrails:
     build: .
     image: lite-guardrails
-    ports:
-      - "8000:8000"
-    # Все креды/настройки — из .env (см. .env.example).
+    # Наружу НЕ публикуем: доступ к API только через nginx (сервис frontend).
+    # Внутри docker-сети доступен как guardrails:8000 (nginx, Prometheus, пробы).
+    expose:
+      - "8000"
     env_file:
       - .env
     depends_on:
-      - redis
-      - postgres
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # /live не трогает БД — годится как liveness контейнера (curl в образе нет,
+      # берём стандартный urllib питона).
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/live')\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       args:
-        # Пусто -> UI ходит в API относительным путём через nginx-проксю (тот же
-        # origin). Задайте UI_API_BASE в .env, если фронт и бэк на разных хостах.
+        # Пусто -> UI ходит в API относительным путём через эту же nginx-проксю.
         VITE_API_BASE: ${UI_API_BASE:-}
     image: lite-guardrails-frontend
+    # ЕДИНСТВЕННАЯ публичная точка входа. Порт хоста 8080 -> nginx :80.
+    # Для prod поставьте перед ним TLS-терминатор или добавьте сюда 443 + сертификаты.
     ports:
       - "8080:80"
     depends_on:
@@ -28,6 +40,12 @@ services:
 
   redis:
     image: redis:7-alpine
+    # Наружу не публикуется — только внутри docker-сети (guardrails:6379).
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
 
   postgres:
@@ -35,12 +53,18 @@ services:
     # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB берутся из .env
     env_file:
       - .env
-    # публикуем на хостовый 5433 (5432 занят локальным Postgres),
-    # чтобы LiteLLM Proxy с хоста мог ходить в эту же БД
+    # Порт БД биндим ТОЛЬКО на localhost хоста (127.0.0.1) — снаружи машины
+    # недоступен, но локальный LiteLLM-прокси с хоста ещё может ходить в БД.
+    # В проде эту секцию можно убрать целиком (тогда БД видна лишь в docker-сети).
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
 volumes:

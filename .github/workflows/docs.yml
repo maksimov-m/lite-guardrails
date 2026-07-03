@@ -7,6 +7,8 @@ on:
       - docs/**
       - mkdocs.yml
       - .github/workflows/docs.yml
+  # Ручной запуск из вкладки Actions — задеплоить доку, не дожидаясь пуша в docs/**.
+  workflow_dispatch:
 
 permissions:
   contents: write  # gh-deploy пушит собранный сайт в ветку gh-pages
