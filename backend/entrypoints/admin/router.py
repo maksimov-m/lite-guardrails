@@ -60,8 +60,15 @@ def _pii_out(r) -> dict:
 
 
 @router.get("/pii", dependencies=[Depends(require_admin)])
-def list_pii(request: Request):
-    return {"rules": [_pii_out(r) for r in _db(request).pii.list()]}
+def list_pii(request: Request, limit: int = 50, offset: int = 0):
+    rows = _db(request).pii.list_page(limit + 1, offset)
+    has_more = len(rows) > limit
+    return {
+        "rules": [_pii_out(r) for r in rows[:limit]],
+        "limit": limit,
+        "offset": offset,
+        "has_more": has_more,
+    }
 
 
 @router.post("/pii", dependencies=[Depends(require_admin)])
@@ -215,11 +222,18 @@ def version(request: Request):
 def logs(
     request: Request,
     module: str | None = None,
-    limit: int = 100,
+    limit: int = 50,
+    offset: int = 0,
     meta_key: str | None = None,
     meta_value: str | None = None,
 ):
-    rows = _db(request).runlog.query_run_logs(module, limit, meta_key, meta_value)
+    # Берём на одну строку больше запрошенного — так узнаём, есть ли ещё страница,
+    # без дорогого COUNT(*) по всей таблице.
+    rows = _db(request).runlog.query_run_logs(
+        module=module, limit=limit + 1, offset=offset,
+        meta_key=meta_key, meta_value=meta_value,
+    )
+    has_more = len(rows) > limit
     return {
         "logs": [
             {
@@ -231,8 +245,11 @@ def logs(
                 "duration_ms": round(r.duration_ms, 3),
                 "meta": r.meta,
             }
-            for r in rows
-        ]
+            for r in rows[:limit]
+        ],
+        "limit": limit,
+        "offset": offset,
+        "has_more": has_more,
     }
 
 
@@ -270,6 +287,7 @@ def _key_out(k) -> dict:
         "prefix": k.prefix,
         "enabled": k.enabled,
         "created_at": k.created_at.isoformat(),
+        "rate_limit_per_min": getattr(k, "rate_limit_per_min", None),
     }
 
 
@@ -282,7 +300,8 @@ def list_api_keys(request: Request):
 def create_api_key(body: ApiKeyIn, request: Request):
     raw, key_hash, prefix = generate_api_key()
     row = _db(request).api_keys.create(
-        name=body.name, key_hash=key_hash, prefix=prefix, enabled=True
+        name=body.name, key_hash=key_hash, prefix=prefix, enabled=True,
+        rate_limit_per_min=body.rate_limit_per_min,
     )
     _refresh_keys(request)
     # Полный ключ показываем единственный раз — сохранить негде, хранится только хэш.

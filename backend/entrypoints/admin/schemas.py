@@ -41,8 +41,10 @@ class RelevantPatch(BaseModel):
 # --- API-ключи -------------------------------------------------------------
 class ApiKeyIn(BaseModel):
     name: str
+    rate_limit_per_min: int | None = None  # None — глобальный дефолт
 
 
 class ApiKeyPatch(BaseModel):
     name: str | None = None
     enabled: bool | None = None
+    rate_limit_per_min: int | None = None
