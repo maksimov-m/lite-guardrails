@@ -5,7 +5,9 @@ from backend.domain.detectors.pii.patterns.base import PiiPattern
 
 class SnilsPattern(PiiPattern):
     name = "snils"
-    regex = r"(?<!\d)\d{3}[\s\-]\d{3}[\s\-]\d{3}[\s\-]\d{2}(?!\d)"
+    # Разделители опциональны — ловим и "123-456-789 01", и слитно "12345678901".
+    # Ложные отсекает контрольная сумма (is_valid), поэтому precision не страдает.
+    regex = r"(?<!\d)\d{3}[\s\-]?\d{3}[\s\-]?\d{3}[\s\-]?\d{2}(?!\d)"
 
     def is_valid(self, value: str) -> bool:
         digits = re.sub(r"\D", "", value)
