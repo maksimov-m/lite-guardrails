@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import * as api from "./api.js";
 
 const PAGE = 50;
+// Технические ключи metadata, которые не показываем в UI (api_key достаточно).
+const HIDDEN_META = new Set(["api_key_id"]);
 
 export default function LogsTab({ onError }) {
   const [logs, setLogs] = useState([]);
@@ -12,6 +14,7 @@ export default function LogsTab({ onError }) {
   const [metaKey, setMetaKey] = useState("");
   const [metaValue, setMetaValue] = useState("");
   const [open, setOpen] = useState(() => new Set());
+  const [big, setBig] = useState(() => new Set()); // раскрытые «побольше» строки
 
   const load = async (offset) => {
     try {
@@ -22,7 +25,7 @@ export default function LogsTab({ onError }) {
     } catch (e) { onError(e.message); }
   };
   const loadKeys = async () => {
-    try { setMetaKeys((await api.getMetaKeys()).keys); }
+    try { setMetaKeys((await api.getMetaKeys()).keys.filter((k) => !HIDDEN_META.has(k))); }
     catch (e) { onError(e.message); }
   };
 
@@ -33,6 +36,11 @@ export default function LogsTab({ onError }) {
   const apply = () => (page === 0 ? load(0) : setPage(0));
   const pick = (k, v) => { setMetaKey(k); setMetaValue(v); setPage(0); };
   const toggle = (id) => setOpen((prev) => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+  const toggleBig = (id) => setBig((prev) => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
     return next;
@@ -74,8 +82,8 @@ export default function LogsTab({ onError }) {
         </thead>
         <tbody>
           {logs.map((l) => (
-            <LogRow key={l.id} log={l} expanded={open.has(l.id)}
-                    onToggle={() => toggle(l.id)} onPick={pick} />
+            <LogRow key={l.id} log={l} expanded={open.has(l.id)} big={big.has(l.id)}
+                    onToggle={() => toggle(l.id)} onBig={() => toggleBig(l.id)} onPick={pick} />
           ))}
           {logs.length === 0 && (
             <tr><td colSpan={6} className="muted">Запусков за выбранный фильтр нет. Смягчите фильтр или запустите проверку во вкладке «Демо».</td></tr>
@@ -97,7 +105,8 @@ export default function LogsTab({ onError }) {
 }
 
 // Одна строка лога: свёрнута до сводки; клик раскрывает вход/выход/metadata.
-function LogRow({ log, expanded, onToggle, onPick }) {
+// В раскрытом виде — стрелка «развернуть побольше» снимает потолок высоты JSON.
+function LogRow({ log, expanded, big, onToggle, onBig, onPick }) {
   const { text, hit } = summarize(log.module, log.output);
   return (
     <>
@@ -116,8 +125,14 @@ function LogRow({ log, expanded, onToggle, onPick }) {
             <div className="log-detail">
               <div className="muted">вход:</div>
               <div className="rule-val">{log.input || <span className="muted">—</span>}</div>
-              <div className="muted" style={{ marginTop: 8 }}>выход:</div>
-              <pre className="mono log-json">{pretty(log.output)}</pre>
+              <div className="row" style={{ marginTop: 8, justifyContent: "space-between" }}>
+                <span className="muted">выход:</span>
+                <button className="log-expand" onClick={(e) => { e.stopPropagation(); onBig(); }}
+                        title={big ? "свернуть" : "развернуть побольше"}>
+                  {big ? "▲ свернуть" : "▼ развернуть побольше"}
+                </button>
+              </div>
+              <pre className={"mono log-json" + (big ? " big" : "")}>{pretty(log.output)}</pre>
             </div>
           </td>
         </tr>
@@ -152,10 +167,11 @@ function pretty(output) {
 
 // Показывает пары key=value чипсами; клик по чипу подставляет их в фильтр.
 function MetaCell({ meta, onPick }) {
-  if (!meta || Object.keys(meta).length === 0) return <span className="muted">—</span>;
+  const entries = Object.entries(meta || {}).filter(([k]) => !HIDDEN_META.has(k));
+  if (entries.length === 0) return <span className="muted">—</span>;
   return (
     <div className="words">
-      {Object.entries(meta).map(([k, v]) => (
+      {entries.map(([k, v]) => (
         <span className="word-chip" key={k} style={{ cursor: "pointer" }}
               title="фильтровать по этому значению"
               onClick={(e) => { e.stopPropagation(); onPick(k, String(v)); }}>

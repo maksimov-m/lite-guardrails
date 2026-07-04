@@ -61,14 +61,20 @@ export default function ApiKeysTab({ onError }) {
 
   return (
     <div>
+      <div className="card" style={{ borderLeft: "3px solid var(--accent)" }}>
+        <b>Лимит частоты на ключ</b> — сколько запросов <b>в минуту</b> разрешено одному
+        ключу. Пусто — общий дефолт сервера · <b>0 — без ограничения</b> · сверх лимита
+        сервис отвечает <code className="mono">429 Too Many Requests</code>.
+      </div>
+
       <div className="card">
         <div className="row">
           <input placeholder="имя ключа (напр. support-bot)" value={name}
                  onChange={(e) => setName(e.target.value)} style={{ flex: 1 }}
                  onKeyDown={(e) => e.key === "Enter" && create()} />
-          <input type="number" min="0" placeholder="лимит/мин" value={limit}
+          <input type="number" min="0" placeholder="макс/мин" value={limit}
                  onChange={(e) => setLimit(e.target.value)} style={{ width: 96 }}
-                 title="запросов в минуту; пусто — глобальный дефолт, 0 — без лимита"
+                 title="максимум запросов в минуту; пусто — глобальный дефолт, 0 — без лимита"
                  onKeyDown={(e) => e.key === "Enter" && create()} />
           <button className="primary" onClick={create}>+ Выдать ключ</button>
         </div>
@@ -96,7 +102,8 @@ export default function ApiKeysTab({ onError }) {
               <span className="muted mono">· {k.prefix}… · {new Date(k.created_at).toLocaleDateString()}</span>
               {!k.enabled && <span className="muted"> · отключён</span>}
             </span>
-            <span className="muted" style={{ whiteSpace: "nowrap" }}>лимит/мин</span>
+            <span className="muted" style={{ whiteSpace: "nowrap" }}
+                  title="максимум запросов в минуту (0 — без лимита)">макс. запр./мин</span>
             <LimitInput value={k.rate_limit_per_min}
                         onSave={(rl) => setLimitFor(k, rl)} />
             <button className="danger" title="отозвать" onClick={() => remove(k)}>✕</button>
