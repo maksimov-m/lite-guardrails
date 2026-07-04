@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import * as api from "./api.js";
 
 const PAGE = 50;
+// Технические ключи metadata, которые не показываем в UI (api_key достаточно).
+const HIDDEN_META = new Set(["api_key_id"]);
 
 export default function LogsTab({ onError }) {
   const [logs, setLogs] = useState([]);
@@ -23,7 +25,7 @@ export default function LogsTab({ onError }) {
     } catch (e) { onError(e.message); }
   };
   const loadKeys = async () => {
-    try { setMetaKeys((await api.getMetaKeys()).keys); }
+    try { setMetaKeys((await api.getMetaKeys()).keys.filter((k) => !HIDDEN_META.has(k))); }
     catch (e) { onError(e.message); }
   };
 
@@ -165,10 +167,11 @@ function pretty(output) {
 
 // Показывает пары key=value чипсами; клик по чипу подставляет их в фильтр.
 function MetaCell({ meta, onPick }) {
-  if (!meta || Object.keys(meta).length === 0) return <span className="muted">—</span>;
+  const entries = Object.entries(meta || {}).filter(([k]) => !HIDDEN_META.has(k));
+  if (entries.length === 0) return <span className="muted">—</span>;
   return (
     <div className="words">
-      {Object.entries(meta).map(([k, v]) => (
+      {entries.map(([k, v]) => (
         <span className="word-chip" key={k} style={{ cursor: "pointer" }}
               title="фильтровать по этому значению"
               onClick={(e) => { e.stopPropagation(); onPick(k, String(v)); }}>
