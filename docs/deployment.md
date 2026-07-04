@@ -4,7 +4,7 @@
 
 ```bash
 cp .env.example .env          # заполнить ADMIN_TOKEN и пароли БД
-docker compose up -d --build  # api :8000, ui :8080, postgres :5433
+docker compose up -d --build  # ui :8080, api :8000 (localhost), postgres :5433
 ```
 
 Миграции и первичный сид накатываются на старте автоматически (под advisory-lock,
@@ -15,7 +15,12 @@ curl localhost:8000/ready     # {"status":"ready"} когда БД и Redis жи
 ```
 
 - **Admin UI:** [http://localhost:8080](http://localhost:8080) — вход по `ADMIN_TOKEN`.
-- **API + схема:** [http://localhost:8000](http://localhost:8000) · OpenAPI на `/docs`.
+- **API напрямую:** [http://localhost:8000](http://localhost:8000) — обычный FastAPI,
+  Swagger на `/docs`, ReDoc на `/redoc`. Порт слушает только `127.0.0.1`; открыть
+  по сети — правьте `ports` в `docker-compose.yml`.
+- **Единая точка входа:** [http://localhost:8080](http://localhost:8080) — nginx
+  проксирует API (`/v1`, `/admin`) и схему (`/docs`) на тот же origin. Для прод-контура
+  публикуйте только его (за TLS), порт `:8000` можно закрыть.
 
 ## Быстрый старт по API
 
