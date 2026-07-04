@@ -27,7 +27,6 @@ import os
 import sys
 
 from fastapi import HTTPException
-
 from lite_guardrails import _META_PII_ID, LiteGuardrails
 
 BASE = os.getenv("GUARD_BASE_URL", "http://localhost:8000")
@@ -136,7 +135,8 @@ async def scenario_fail_open_closed():
         await g_closed.async_pre_call_hook(None, None, dict(data), "completion")
         _check("fail_closed: недоступный guard рубит запрос", False, "НЕ отклонён")
     except HTTPException as e:
-        _check("fail_closed: недоступный guard рубит запрос", e.status_code == 503, f"HTTP {e.status_code}")
+        _check("fail_closed: недоступный guard рубит запрос",
+               e.status_code == 503, f"HTTP {e.status_code}")
 
 
 async def main():
