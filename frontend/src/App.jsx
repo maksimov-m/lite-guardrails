@@ -19,7 +19,12 @@ const NAV = [
 export default function App() {
   const [authed, setAuthed] = useState(false);
   const [checking, setChecking] = useState(true); // восстанавливаем сессию из localStorage
-  const [tab, setTab] = useState("dashboard");
+  // Активную вкладку помним между перезагрузками страницы (иначе всегда кидало
+  // на «Дашборд»). Значение из localStorage валидируем — вдруг устарело.
+  const [tab, setTab] = useState(() => {
+    const saved = localStorage.getItem("gr_tab");
+    return NAV.some((n) => n.key === saved) ? saved : "dashboard";
+  });
   const [error, setError] = useState("");
   const [theme, setTheme] = useState(localStorage.getItem("gr_theme") || "light");
 
@@ -27,6 +32,8 @@ export default function App() {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("gr_theme", theme);
   }, [theme]);
+
+  useEffect(() => { localStorage.setItem("gr_tab", tab); }, [tab]);
 
   // При загрузке страницы: если токен уже был сохранён — валидируем его и не
   // требуем повторный вход. Невалидный (напр. сменили на сервере) — чистим.

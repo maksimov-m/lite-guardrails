@@ -12,6 +12,7 @@ export default function LogsTab({ onError }) {
   const [metaKey, setMetaKey] = useState("");
   const [metaValue, setMetaValue] = useState("");
   const [open, setOpen] = useState(() => new Set());
+  const [big, setBig] = useState(() => new Set()); // раскрытые «побольше» строки
 
   const load = async (offset) => {
     try {
@@ -33,6 +34,11 @@ export default function LogsTab({ onError }) {
   const apply = () => (page === 0 ? load(0) : setPage(0));
   const pick = (k, v) => { setMetaKey(k); setMetaValue(v); setPage(0); };
   const toggle = (id) => setOpen((prev) => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+  const toggleBig = (id) => setBig((prev) => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
     return next;
@@ -74,8 +80,8 @@ export default function LogsTab({ onError }) {
         </thead>
         <tbody>
           {logs.map((l) => (
-            <LogRow key={l.id} log={l} expanded={open.has(l.id)}
-                    onToggle={() => toggle(l.id)} onPick={pick} />
+            <LogRow key={l.id} log={l} expanded={open.has(l.id)} big={big.has(l.id)}
+                    onToggle={() => toggle(l.id)} onBig={() => toggleBig(l.id)} onPick={pick} />
           ))}
           {logs.length === 0 && (
             <tr><td colSpan={6} className="muted">Запусков за выбранный фильтр нет. Смягчите фильтр или запустите проверку во вкладке «Демо».</td></tr>
@@ -97,7 +103,8 @@ export default function LogsTab({ onError }) {
 }
 
 // Одна строка лога: свёрнута до сводки; клик раскрывает вход/выход/metadata.
-function LogRow({ log, expanded, onToggle, onPick }) {
+// В раскрытом виде — стрелка «развернуть побольше» снимает потолок высоты JSON.
+function LogRow({ log, expanded, big, onToggle, onBig, onPick }) {
   const { text, hit } = summarize(log.module, log.output);
   return (
     <>
@@ -116,8 +123,14 @@ function LogRow({ log, expanded, onToggle, onPick }) {
             <div className="log-detail">
               <div className="muted">вход:</div>
               <div className="rule-val">{log.input || <span className="muted">—</span>}</div>
-              <div className="muted" style={{ marginTop: 8 }}>выход:</div>
-              <pre className="mono log-json">{pretty(log.output)}</pre>
+              <div className="row" style={{ marginTop: 8, justifyContent: "space-between" }}>
+                <span className="muted">выход:</span>
+                <button className="log-expand" onClick={(e) => { e.stopPropagation(); onBig(); }}
+                        title={big ? "свернуть" : "развернуть побольше"}>
+                  {big ? "▲ свернуть" : "▼ развернуть побольше"}
+                </button>
+              </div>
+              <pre className={"mono log-json" + (big ? " big" : "")}>{pretty(log.output)}</pre>
             </div>
           </td>
         </tr>

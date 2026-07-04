@@ -315,6 +315,13 @@ th {
   white-space: pre-wrap; word-break: break-word;
   max-height: 320px; overflow: auto;
 }
+/* «Развернуть побольше» — снимаем компактный потолок высоты. */
+.log-json.big { max-height: 75vh; }
+.log-expand {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: none; color: var(--accent);
+  cursor: pointer; padding: 0; font: inherit;
+}
 
 /* ============================================================
    Логин
