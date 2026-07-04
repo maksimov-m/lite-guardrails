@@ -11,7 +11,8 @@ from typing import Any, Iterable
 
 import httpx
 
-from .errors import APIError, AuthError, RateLimitError
+from ._transport import build_body, classify_response, retry_delay
+from .errors import APIError
 
 
 class GuardrailsClient:
@@ -43,13 +44,13 @@ class GuardrailsClient:
 
     # --- детекция ---
     def detect_pii(self, text: str, metadata: dict | None = None) -> dict:
-        return self._post("/v1/detect/pii", _body(text, metadata))
+        return self._post("/v1/detect/pii", build_body(text, metadata))
 
     def detect_nsfw(self, text: str, metadata: dict | None = None) -> dict:
-        return self._post("/v1/detect/nsfw", _body(text, metadata))
+        return self._post("/v1/detect/nsfw", build_body(text, metadata))
 
     def detect_relevant(self, text: str, metadata: dict | None = None) -> dict:
-        return self._post("/v1/detect/relevant", _body(text, metadata))
+        return self._post("/v1/detect/relevant", build_body(text, metadata))
 
     def detect_pii_batch(self, texts: Iterable[str]) -> Any:
         return self._post("/v1/detect/pii/batch", {"texts": list(texts)})
@@ -82,30 +83,10 @@ class GuardrailsClient:
             except httpx.TransportError as e:
                 if last:
                     raise APIError(f"transport error: {e}") from e
-                time.sleep(0.2 * (attempt + 1))
+                time.sleep(retry_delay(attempt))
                 continue
 
-            if r.status_code == 401:
-                raise AuthError("невалидный или отсутствующий API-ключ")
-            if r.status_code == 429:
-                raise RateLimitError(
-                    "превышен лимит запросов",
-                    retry_after=int(r.headers.get("Retry-After", 0) or 0),
-                )
-            if r.status_code >= 500 and not last:
-                time.sleep(0.2 * (attempt + 1))
+            if classify_response(r, last=last):
+                time.sleep(retry_delay(attempt))
                 continue
-            if r.status_code >= 400:
-                raise APIError(f"{r.status_code}: {_detail(r)}", status_code=r.status_code)
             return r.json()
-
-
-def _body(text: str, metadata: dict | None) -> dict:
-    return {"text": text, "metadata": metadata} if metadata else {"text": text}
-
-
-def _detail(r: httpx.Response) -> str:
-    try:
-        return r.json().get("detail", r.reason_phrase)
-    except Exception:
-        return r.reason_phrase
