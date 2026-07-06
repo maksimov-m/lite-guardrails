@@ -70,6 +70,10 @@ curl localhost:8000/ready     # {"status":"ready"} когда БД и Redis жи
 - **Единая точка входа:** http://localhost:8080 — nginx проксирует API (`/v1`,
   `/admin`) и схему (`/docs`) на тот же origin; для прод-контура публикуйте только
   его (за TLS), а порт `:8000` можно закрыть.
+- **Мониторинг (опционально):** `docker compose --profile monitoring up -d`
+  поднимает Prometheus + Grafana с уже настроенным дашбордом (Grafana на
+  http://localhost:3000). Без профиля они не запускаются. Подробнее —
+  [docs/deployment.md](docs/deployment.md).
 
 ### Быстрый старт по API
 
