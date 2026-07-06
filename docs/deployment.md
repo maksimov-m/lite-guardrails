@@ -65,13 +65,36 @@ curl -X POST localhost:8000/v1/detect/pii \
 
 ## Мониторинг и пробы
 
-`GET /metrics` — метрики Prometheus (запросы/детекции по модулям). Пример scrape:
+`GET /metrics` — метрики Prometheus (запросы/детекции по модулям, скользящее
+окно `METRICS_WINDOW_SECONDS`, тип gauge). Сам сервис ничего не собирает — это
+пассивный источник в pull-модели: если никто не скрейпит, ручка ничего не стоит.
+
+Стек сбора опционален. Три сценария:
+
+**1. Готовый стек одной командой (профиль `monitoring`).** В `docker-compose.yml`
+есть сервисы `prometheus` и `grafana` под профилем `monitoring` — без профиля они
+не поднимаются. С профилем поднимается всё вместе, Grafana сама подхватывает
+источник данных и дашборд (автопровижининг из `monitoring/`):
+
+```bash
+docker compose --profile monitoring up -d
+```
+
+- Grafana: <http://localhost:3000> (дашборд «lite-guardrails · обзор» уже загружен;
+  просмотр анонимный, правка — под `GRAFANA_ADMIN_USER`/`GRAFANA_ADMIN_PASSWORD`).
+- Prometheus: <http://localhost:9090>. Оба порта висят только на `127.0.0.1`.
+- Конфиги правятся в `monitoring/prometheus/` и `monitoring/grafana/`.
+
+**2. Свой Prometheus.** Профиль не включаем — просто скрейпим ручку своим стеком:
 
 ```yaml
 scrape_configs:
   - job_name: lite-guardrails
     static_configs: [{ targets: ["guardrails:8000"] }]
 ```
+
+**3. Никакого мониторинга.** Не делаем ничего — базовый `docker compose up`
+Prometheus/Grafana не тянет.
 
 Пробы оркестратора: `livenessProbe` → `/live` (только «процесс жив» — провал
 перезапускает под), `readinessProbe` → `/ready` (проверяет Postgres + Redis —

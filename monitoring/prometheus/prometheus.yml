@@ -1,0 +1,11 @@
+# Конфиг Prometheus для профиля `monitoring` (docker compose --profile monitoring).
+# Скрейпит /metrics сервиса guardrails внутри docker-сети (наружу не выходит).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: lite-guardrails
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["guardrails:8000"]
