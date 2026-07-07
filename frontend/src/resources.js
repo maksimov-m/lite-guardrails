@@ -1,6 +1,6 @@
 // Адаптеры для DictionaryManager: описывают, как работать с конкретным ресурсом.
-// Инкапсулируют разницу между NSFW (слова через пробел, есть экспорт, текст
-// грузится отдельным запросом) и Relevant (фразы по строкам, текст уже в списке).
+// Инкапсулируют разницу между NSFW (слова через пробел, текст грузится
+// отдельным запросом) и Relevant (фразы по строкам, текст уже в списке).
 
 import * as api from "./api.js";
 
@@ -24,7 +24,6 @@ export const nsfwResource = {
   saveText: (id, text) => api.patchDict(id, { text }),
   toggle: (item) => api.patchDict(item.id, { enabled: !item.enabled }),
   remove: (id) => api.deleteDict(id),
-  onExport: (item) => api.downloadDict(item.id, item.title),
 };
 
 export const relevantResource = {

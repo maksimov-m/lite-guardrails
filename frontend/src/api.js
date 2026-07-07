@@ -91,7 +91,8 @@ export const patchRelevantSettings = (patch) =>
   request("PUT", "/admin/relevant/settings", { body: patch, admin: true });
 
 // --- админ: API-ключи клиентов ---
-export const listKeys = () => request("GET", "/admin/api-keys", { admin: true });
+export const listKeys = (limit = 20, offset = 0) =>
+  request("GET", `/admin/api-keys?limit=${limit}&offset=${offset}`, { admin: true });
 export const createKey = (name, rateLimitPerMin = null) =>
   request("POST", "/admin/api-keys", {
     body: { name, rate_limit_per_min: rateLimitPerMin },
@@ -119,21 +120,3 @@ export const getMetaKeys = () =>
 // --- админ: статистика для дашборда ---
 export const getStats = (period = "24h") =>
   request("GET", `/admin/stats?period=${period}`, { admin: true });
-
-// Скачивание NSFW-словаря .txt: тянем blob с admin-токеном и кликаем по ссылке.
-export async function downloadDict(id, name) {
-  const cfg = getConfig();
-  const res = await fetch(`${cfg.base}/admin/nsfw/${id}/export`, {
-    headers: { "X-Admin-Token": cfg.token },
-  });
-  if (!res.ok) throw new Error(`${res.status}: не удалось скачать`);
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${(name || "dict").replace(/[^\w.-]+/g, "_")}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}

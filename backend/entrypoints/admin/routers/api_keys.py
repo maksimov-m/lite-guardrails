@@ -10,8 +10,17 @@ router = APIRouter()
 
 
 @router.get("/api-keys")
-def list_api_keys(request: Request):
-    return {"keys": [key_out(k) for k in db(request).api_keys.list()]}
+def list_api_keys(request: Request, limit: int = 50, offset: int = 0):
+    # Берём на одну строку больше запрошенного — так узнаём, есть ли ещё страница,
+    # без отдельного COUNT(*). Пагинация на уровне SQL (LIMIT/OFFSET).
+    rows = db(request).api_keys.list_page(limit + 1, offset)
+    has_more = len(rows) > limit
+    return {
+        "keys": [key_out(k) for k in rows[:limit]],
+        "limit": limit,
+        "offset": offset,
+        "has_more": has_more,
+    }
 
 
 @router.post("/api-keys")
