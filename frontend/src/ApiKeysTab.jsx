@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import * as api from "./api.js";
 
+const PAGE = 20;
+
 // Выдача клиентских API-ключей. Полный ключ виден ТОЛЬКО один раз при создании
 // (сервер хранит лишь sha256-хэш) — показываем его в баннере с кнопкой «Копировать».
 // Инлайн-редактор лимита: пусто = глобальный дефолт (не переопределяем), число —
@@ -26,12 +28,18 @@ export default function ApiKeysTab({ onError }) {
   const [name, setName] = useState("");
   const [limit, setLimit] = useState("");
   const [fresh, setFresh] = useState(null); // {name, key} — только что созданный
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
-  const load = async () => {
-    try { setKeys((await api.listKeys()).keys); onError(""); }
-    catch (e) { onError(e.message); }
+  const load = async (offset = page * PAGE) => {
+    try {
+      const r = await api.listKeys(PAGE, offset);
+      setKeys(r.keys);
+      setHasMore(r.has_more);
+      onError("");
+    } catch (e) { onError(e.message); }
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(page * PAGE); }, [page]);
 
   const create = async () => {
     if (!name.trim()) return;
@@ -54,27 +62,25 @@ export default function ApiKeysTab({ onError }) {
   };
   const remove = async (k) => {
     if (!confirm(`Отозвать ключ «${k.name}»? Клиенты с ним получат 401.`)) return;
-    try { await api.deleteKey(k.id); load(); }
-    catch (e) { onError(e.message); }
+    try {
+      await api.deleteKey(k.id);
+      // удалили последнюю строку на непервой странице — шагаем назад
+      if (keys.length === 1 && page > 0) setPage((p) => p - 1);
+      else load();
+    } catch (e) { onError(e.message); }
   };
   const copy = (text) => navigator.clipboard?.writeText(text);
 
   return (
     <div>
-      <div className="card" style={{ borderLeft: "3px solid var(--accent)" }}>
-        <b>Лимит частоты на ключ</b> — сколько запросов <b>в минуту</b> разрешено одному
-        ключу. Пусто — общий дефолт сервера · <b>0 — без ограничения</b> · сверх лимита
-        сервис отвечает <code className="mono">429 Too Many Requests</code>.
-      </div>
-
       <div className="card">
         <div className="row">
           <input placeholder="имя ключа (напр. support-bot)" value={name}
                  onChange={(e) => setName(e.target.value)} style={{ flex: 1 }}
                  onKeyDown={(e) => e.key === "Enter" && create()} />
-          <input type="number" min="0" placeholder="макс/мин" value={limit}
+          <input type="number" min="0" placeholder="RPM" value={limit}
                  onChange={(e) => setLimit(e.target.value)} style={{ width: 96 }}
-                 title="максимум запросов в минуту; пусто — глобальный дефолт, 0 — без лимита"
+                 title="RPM — максимум запросов в минуту; пусто — глобальный дефолт, 0 — без лимита"
                  onKeyDown={(e) => e.key === "Enter" && create()} />
           <button className="primary" onClick={create}>+ Выдать ключ</button>
         </div>
@@ -103,7 +109,7 @@ export default function ApiKeysTab({ onError }) {
               {!k.enabled && <span className="muted"> · отключён</span>}
             </span>
             <span className="muted" style={{ whiteSpace: "nowrap" }}
-                  title="максимум запросов в минуту (0 — без лимита)">макс. запр./мин</span>
+                  title="RPM — максимум запросов в минуту (0 — без лимита)">RPM</span>
             <LimitInput value={k.rate_limit_per_min}
                         onSave={(rl) => setLimitFor(k, rl)} />
             <button className="danger" title="отозвать" onClick={() => remove(k)}>✕</button>
@@ -113,6 +119,16 @@ export default function ApiKeysTab({ onError }) {
       {keys.length === 0 && (
         <p className="muted">Ключей пока нет. Введите имя выше и выдайте первый ключ.</p>
       )}
+
+      <div className="row" style={{ marginTop: 12, justifyContent: "flex-end" }}>
+        <button className="ghost" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+          ← Назад
+        </button>
+        <span className="muted">стр. {page + 1}</span>
+        <button className="ghost" disabled={!hasMore} onClick={() => setPage((p) => p + 1)}>
+          Вперёд →
+        </button>
+      </div>
     </div>
   );
 }
