@@ -1,5 +1,5 @@
 site_name: lite-guardrails
-site_description: Быстрый self-hosted привратник для текста — PII / NSFW / релевантность
+site_description: Быстрый self-hosted для текста — PII / NSFW / релевантность
 site_url: https://maksimov-m.github.io/lite-guardrails/
 docs_dir: docs
 

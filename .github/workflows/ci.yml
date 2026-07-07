@@ -39,6 +39,4 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install --group dev
-      # Аудит runtime-зависимостей на известные уязвимости (CVE) по requirements.txt —
-      # ровно то, что ставит Dockerfile. Падает, если найдена уязвимость.
       - run: pip-audit -r requirements.txt
