@@ -109,7 +109,11 @@ class LiteGuardrails(CustomGuardrail):
         return r.json()
 
     async def _anonymize(self, text: str) -> dict:
-        r = await self._http.post(f"{self.base_url}/v1/anonymize", json={"text": text})
+        # deanonymize=true — сервер сохраняет mapping в Redis и возвращает id,
+        # без него id=null и развернуть теги в ответе модели уже нечем.
+        r = await self._http.post(
+            f"{self.base_url}/v1/anonymize", json={"text": text, "deanonymize": True}
+        )
         r.raise_for_status()
         return r.json()  # {"id": ..., "text": ...}
 
