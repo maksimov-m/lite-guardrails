@@ -46,7 +46,7 @@ C4Component
     Component(routers, "Entrypoints", "FastAPI routers", "detect/anonymize (/v1), admin, /metrics, /live /ready /health")
     Component(auth, "Auth + Rate limit", "dependency", "X-API-Key + лимит per-key")
     Component(engine, "GuardEngine", "domain", "держит детекторы, hot-reload по версии конфига")
-    Component(detectors, "Детекторы", "domain", "PII (regex+Luhn), NSFW (словарь), Relevant")
+    Component(detectors, "Детекторы", "domain", "PII (regex + контрольные суммы: Luhn/mod-11/mod-101), NSFW (словарь + Aho-Corasick), Relevant")
     Component(runlog, "RunLogger", "async", "очередь + батч-запись логов, PII-safe")
     Component(ports, "Ports", "интерфейсы", "Crud / RunLog / Version / MappingStore / RateLimiter")
   }
