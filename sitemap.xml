@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://maksimov-m.github.io/lite-guardrails/</loc>
+         <lastmod>2026-07-08</lastmod>
+    </url>
+    <url>
+         <loc>https://maksimov-m.github.io/lite-guardrails/architecture/</loc>
+         <lastmod>2026-07-08</lastmod>
+    </url>
+    <url>
+         <loc>https://maksimov-m.github.io/lite-guardrails/comparison/</loc>
+         <lastmod>2026-07-08</lastmod>
+    </url>
+    <url>
+         <loc>https://maksimov-m.github.io/lite-guardrails/deployment/</loc>
+         <lastmod>2026-07-08</lastmod>
+    </url>
+    <url>
+         <loc>https://maksimov-m.github.io/lite-guardrails/modules/</loc>
+         <lastmod>2026-07-08</lastmod>
+    </url>
+    <url>
+         <loc>https://maksimov-m.github.io/lite-guardrails/sdk-js/</loc>
+         <lastmod>2026-07-08</lastmod>
+    </url>
+    <url>
+         <loc>https://maksimov-m.github.io/lite-guardrails/sdk/</loc>
+         <lastmod>2026-07-08</lastmod>
+    </url>
+</urlset>
