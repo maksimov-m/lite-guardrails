@@ -30,6 +30,20 @@ with GuardrailsClient("http://localhost:8000", api_key="gk_...") as guard:
     guard.detect_nsfw_batch(["текст 1", "текст 2"])
 ```
 
+## Асинхронный клиент
+
+Тот же контракт на `async`/`await` — класс `AsyncGuardrailsClient` с идентичным
+набором методов:
+
+```python
+from lite_guardrails_client import AsyncGuardrailsClient
+
+async with AsyncGuardrailsClient("http://localhost:8000", api_key="gk_...") as guard:
+    out = await guard.detect_pii("мой телефон +79161234567")
+    masked = await guard.anonymize("почта ivan@example.com", deanonymize=True)
+    original = await guard.deanonymize(masked["id"], masked["text"])
+```
+
 ## Обработка ошибок
 
 Исключения типизированы: `AuthError` (401), `RateLimitError` (429, с полем
@@ -51,4 +65,5 @@ except RateLimitError as e:
 
 `detect_pii` · `detect_nsfw` · `detect_relevant` (+ `_batch`) ·
 `anonymize` / `anonymize_batch` (флаг `deanonymize`, по умолчанию `False`) ·
-`deanonymize`. Все — поверх версионированного контракта `/v1`.
+`deanonymize`. Все — поверх версионированного контракта `/v1`. У
+`AsyncGuardrailsClient` набор методов идентичен (все — `await`).

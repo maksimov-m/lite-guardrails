@@ -7,21 +7,23 @@
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)
-![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)
 ![Self-hosted](https://img.shields.io/badge/deploy-self--hosted-0aa.svg)
-![No telemetry](https://img.shields.io/badge/telemetry-none-lightgrey.svg)
 <!-- CI-бейдж: раскомментируйте и подставьте OWNER/REPO после пуша на GitHub:
 ![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg) -->
 
-Самостоятельный сервис-«привратник» для текста на русском: детекция **PII**,
-**NSFW** и **релевантности** (смолток/оффтоп) + **анонимизация/деанонимизация** PII.
-Не ML-модель, а быстрый детерминированный слой на регулярках и словарях —
-разворачивается в своём контуре, конфигурируется через админку, отдаёт метрики и
-пробы.
+**lite-guardrails** — легковесный self-hosted Guardrails для текстовых данных.
+Быстрый детерминированный слой на регулярках и словарях (не ML-модель):
+разворачивается в своём контуре, конфигурируется через админку, отдаёт метрики и пробы.
 
-Назначение — дешёвый **первый фильтр** перед LLM/бизнес-логикой: срезать очевидное
-(карты, телефоны, СНИЛС, маты, оффтоп) за микросекунды. По скорости на 2–5 порядков
-быстрее Presidio/LLM Guard; подробнее — [docs/comparison.md](docs/comparison.md).
+📖 **Документация:** <https://maksimov-m.github.io/lite-guardrails/>
+
+Состоит из трёх модулей:
+
+- **PII** — находит персональные данные (email, телефон, банковская карта, ИНН,
+  СНИЛС, паспорт РФ, IP, URL) и умеет обратимо их анонимизировать и деанонимизировать.
+- **NSFW** — ловит мат и обсценную лексику (RU + EN) по словарю.
+- **Релевантность** — отсекает смолток и оффтоп (приветствия, благодарности,
+  прощания и т.п.).
 
 ![Админка lite-guardrails: дашборд со сводкой по PII / NSFW / релевантности, латентностью (avg/p95) и топом потребителей](docs/assets/screenshot.png)
 
@@ -38,8 +40,8 @@
 
 ## Из чего состоит
 
-- **API + движок** — FastAPI за gunicorn (8 воркеров): детекция, анонимизация,
-  админ-CRUD, метрики, пробы.
+- **API + движок** — FastAPI за gunicorn (по умолчанию 8 воркеров, регулируется
+  `WORKERS`): детекция, анонимизация, админ-CRUD, метрики, пробы.
 - **Admin UI** — React + nginx: правила, ключи, логи, дашборд.
 - **PostgreSQL** — правила, словари, ключи, логи прогонов, версия конфига (миграции
   Alembic).
@@ -70,10 +72,11 @@ curl localhost:8000/ready     # {"status":"ready"} когда БД и Redis жи
 - **Единая точка входа:** http://localhost:8080 — nginx проксирует API (`/v1`,
   `/admin`) и схему (`/docs`) на тот же origin; для прод-контура публикуйте только
   его (за TLS), а порт `:8000` можно закрыть.
-- **Мониторинг (опционально):** `docker compose --profile monitoring up -d`
-  поднимает Prometheus + Grafana с уже настроенным дашбордом (Grafana на
-  http://localhost:3000). Без профиля они не запускаются. Подробнее —
-  [docs/deployment.md](docs/deployment.md).
+- **Мониторинг (опционально):** конфиги Prometheus и Grafana лежат в папке
+  [`monitoring/`](monitoring). Команда `docker compose --profile monitoring up -d`
+  автоматически поднимает Prometheus + Grafana с уже настроенным дашбордом (Grafana
+  на http://localhost:3000) — провижининг из коробки, руками ничего настраивать не
+  нужно. Без профиля они не запускаются. Подробнее — [monitoring/README.md](monitoring/README.md).
 
 ### Быстрый старт по API
 
@@ -92,7 +95,9 @@ curl -X POST localhost:8000/v1/detect/pii \
 ### Python-клиент (SDK)
 
 Вместо сырого HTTP — тонкий клиент [`sdk/python`](sdk/python): подставляет ключ,
-делает ретраи, разбирает 401/429 в типизированные ошибки.
+делает ретраи, разбирает 401/429 в типизированные ошибки. Есть и **синхронный**
+(`GuardrailsClient`), и **асинхронный** (`AsyncGuardrailsClient`) клиент — один и
+тот же контракт.
 
 ```bash
 pip install ./sdk/python
@@ -136,12 +141,6 @@ const original = await guard.deanonymize(masked.id, masked.text);
 
 Полный список ручек и переменных `.env` — в [docs/architecture.md](docs/architecture.md).
 
-## Приватность
-
-Полностью self-hosted: сервис **не отправляет наружу ничего** — ни телеметрии, ни
-аналитики. Данные не покидают ваш контур. В аудит-логи по умолчанию пишется
-**анонимизированный** текст (сырой ввод — только при явном `LOG_RAW_INPUT=true`).
-
 ## Разработка
 
 ```bash
@@ -156,12 +155,6 @@ ruff check .      # линт
 
 Фронтенд — в [`frontend/`](frontend) (`npm install && npm run dev`). Правки правил и
 словарей применяются на живом сервисе через админку без рестарта.
-
-## Безопасность
-
-Инструмент трогает PII — при развёртывании смените дефолтные `ADMIN_TOKEN` и пароли
-БД, админку и `/metrics` держите за ingress/VPN. Ответственное раскрытие уязвимостей
-и чек-лист прода — в [SECURITY.md](SECURITY.md).
 
 ## Лицензия
 

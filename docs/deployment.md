@@ -55,13 +55,17 @@ curl -X POST localhost:8000/v1/detect/pii \
 |---|---|---|
 | `DATABASE_URL` | DSN PostgreSQL | — |
 | `REDIS_URL` | подключение Redis | — |
-| `ADMIN_TOKEN` | токен админ-ручек | — (обязательно сменить) |
+| `ADMIN_TOKEN` | токен админ-ручек | `admin` (небезопасный fallback — **обязательно сменить**) |
 | `WORKERS` | число gunicorn-воркеров | 8 |
 | `RATE_LIMIT_DEFAULT_PER_MIN` | лимит на ключ по умолчанию (0 — без лимита) | 60 |
+| `MAX_TEXT_LENGTH` | макс. длина поля `text`, символов (иначе 422) | 16384 |
 | `LOG_RETENTION_DAYS` | сколько дней хранить логи прогонов (0 — бессрочно) | 30 |
 | `MAPPING_TTL_SECONDS` | TTL PII-маппингов в Redis | 3600 |
 | `LOG_LEVEL` / `LOG_JSON` | уровень и формат stdout-логов | INFO / true |
+| `CORS_ALLOW_ORIGINS` / `_METHODS` / `_HEADERS` | CORS (для прода сузить до своих доменов) | `*` |
 | `METRICS_ENABLED` | отдавать `/metrics` | true |
+| `METRICS_WINDOW_SECONDS` | окно агрегации метрик, сек | 86400 |
+| `METRICS_CACHE_SECONDS` | кэш ответа `/metrics`, сек (нагрузка scrape на БД) | 15 |
 
 ## Мониторинг и пробы
 

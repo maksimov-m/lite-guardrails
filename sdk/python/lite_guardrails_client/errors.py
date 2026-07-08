@@ -1,5 +1,7 @@
 """Типизированные ошибки клиента."""
 
+from __future__ import annotations
+
 
 class GuardrailsError(Exception):
     """Базовая ошибка клиента."""

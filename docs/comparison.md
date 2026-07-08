@@ -3,7 +3,8 @@
 lite-guardrails прогнан против **Microsoft Presidio** и **LLM Guard** (ProtectAI)
 на публичных RU-датасетах `redmadrobot-rnd/pii_benchmark` и `nsfw_benchmark`
 (стратифицированные сэмплы, span-level micro-F1 с partial-match, CPU). Скрипты
-воспроизведения — в каталоге `benchmarks/research/` репозитория.
+воспроизведения ведутся в каталоге `benchmarks/research/` (локально, вне
+публичного репозитория).
 
 ## PII
 
